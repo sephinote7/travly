@@ -1,7 +1,7 @@
 import React from 'react';
 
 function SignupComp() {
-  return <div>SignupComp</div>;
+  return <div>SignupComp1</div>;
 }
 
 export default SignupComp;
