@@ -2,7 +2,6 @@ import { Outlet, useLocation } from 'react-router-dom';
 import HeaderComp from './HeaderComp';
 import FooterComp from './FooterComp';
 import LoginComp from './LoginComp';
-import SearchComp from './SearchComp';
 import SideProfileComp from './SideProfileComp';
 
 // Header Footer 동시에 관리 Write와 Modify에서는 렌더링 되지 않도록 제어
@@ -32,8 +31,6 @@ const Layout = () => {
       {!isHiddenPath && <HeaderComp />}
 
       {!isHiddenPath && <LoginComp />}
-
-      {!isHiddenPath && <SearchComp />}
 
       {!isHiddenPath && <SideProfileComp />}
 
