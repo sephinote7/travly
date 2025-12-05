@@ -61,7 +61,7 @@ function HeaderComp() {
 
           {/* 6. 새 알림 배지 (빨간 점) */}
           {hasNewNotice && (
-            <div className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></div>
+            <div className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-1 border-white"></div>
           )}
           {/* 7. NoticeComp 표시/숨김 로직 */}
           {isNoticeOpen && <NoticeComp />}

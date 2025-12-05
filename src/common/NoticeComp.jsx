@@ -49,7 +49,7 @@ function NoticeComp() {
   }, []); // 빈 배열: 최초 렌더링 시 1회만 실행
 
   return (
-    <div className="absolute top-[80px] right-0 w-[300px] gap-2.5 flex flex-col bg-white p-5 z-10 shadow-lg rounded-[5px]">
+    <div className="absolute top-[60px] right-0 w-[300px] gap-2.5 flex flex-col bg-white p-5 z-10 shadow-lg rounded-[5px]">
       {/* z-10 추가로 다른 요소 위로 올림 */}
       <div className="flex flex-col gap-4">
         <h5 className="font-bold border-b border-neutral-500">새 댓글 알림</h5>
