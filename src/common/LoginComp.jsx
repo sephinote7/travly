@@ -1,12 +1,16 @@
 // src/common/LoginComp.jsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from './AuthStateContext.jsx';
 
 function LoginComp({ open, onClose, onLoginSuccess }) {
   const navigate = useNavigate();
+  const { login } = useAuth(); // ✅ Supabase 로그인 사용
+
   const [saveEmail, setSaveEmail] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errorMsg, setErrorMsg] = useState(''); // ✅ 에러 메시지
 
   if (!open) return null;
 
@@ -15,11 +19,19 @@ function LoginComp({ open, onClose, onLoginSuccess }) {
     navigate('/signup');
   };
 
-  const handleLogin = () => {
-    if (email && password) {
-      onLoginSuccess?.();
-      onClose?.();
+  const handleLogin = async () => {
+    if (!email || !password) return;
+
+    setErrorMsg('');
+    const result = await login({ email, password }); // ✅ Supabase 로그인 시도
+
+    if (!result.success) {
+      setErrorMsg(result.error?.message ?? '이메일 또는 비밀번호를 확인해 주세요.');
+      return;
     }
+
+    onLoginSuccess?.();
+    onClose?.();
   };
 
   const handleKeyDown = (e) => {
@@ -46,7 +58,7 @@ function LoginComp({ open, onClose, onLoginSuccess }) {
             ✕
           </button>
 
-          {/* 제목 영역: 원래처럼 왼쪽 정렬 */}
+          {/* 제목 영역: 왼쪽 정렬 */}
           <div className="w-full max-w-[680px] self-start">
             <h2 className="font-semibold mb-1" style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: '24px' }}>
               로그인
@@ -56,7 +68,7 @@ function LoginComp({ open, onClose, onLoginSuccess }) {
             </p>
           </div>
 
-          {/* 폼 + 로그인 버튼 영역 (가로 중앙, 고정 폭) */}
+          {/* 폼 + 로그인 버튼 영역 */}
           <div className="flex flex-col gap-4 items-center w-full">
             <div className="w-full max-w-[680px]">
               {/* 이메일 */}
@@ -102,6 +114,9 @@ function LoginComp({ open, onClose, onLoginSuccess }) {
                   />
                 </div>
               </div>
+
+              {/* 에러 메시지 */}
+              {errorMsg && <p className="mt-2 text-sm text-red-500">{errorMsg}</p>}
 
               {/* 로그인 버튼 */}
               <button

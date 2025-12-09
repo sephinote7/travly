@@ -1,7 +1,15 @@
-import React from 'react';
-
-function VisualComp() {
-  return <div className="py-5 bg-pink-200">비주얼 영역</div>;
+// src/components/VisualComp.jsx
+export default function VisualComp() {
+  return (
+    <section className="w-full h-[100vh] bg-cover bg-blue-200 bg-center flex items-center justify-center text-white">
+      <div className="text-center px-4">
+        <h2 className="text-2xl md:text-3xl font-semibold mb-4 leading-relaxed">
+          당신의 이야기가 시작되는 곳, Travly
+          <br />
+          가장 새로운 여행 이야기가 당신을 기다려요!
+        </h2>
+        <p className="text-lg md:text-xl">매일매일 새로운 세상을 발견하세요</p>
+      </div>
+    </section>
+  );
 }
-
-export default VisualComp;

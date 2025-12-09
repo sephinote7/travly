@@ -3,35 +3,69 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import kakaoIcon from '../../common/images/kakao.png';
 import travlyLogo from '../../common/images/logo2.png';
+import { useAuth } from '../../common/AuthStateContext.jsx';
+import supabase from '../../common/../util/supabaseClient.js'; // 실제 경로 맞춰서 수정
 
 function SignupComp() {
   const navigate = useNavigate();
+  const { signup } = useAuth();
 
   // 입력값 상태
-  const [email, setEmail] = useState('');
-  const [nickname, setNickname] = useState('');
+  const [form, setForm] = useState({
+    email: '',
+    nickname: '',
+    password: '',
+    passwordCheck: '',
+  });
 
   // 이메일 / 닉네임 중복 확인 상태
-  // status: 'idle' | 'ok' | 'error'
-  const [emailStatus, setEmailStatus] = useState('idle');
+  const [emailStatus, setEmailStatus] = useState('idle'); // 'idle' | 'ok' | 'error'
   const [emailMessage, setEmailMessage] = useState('');
   const [nicknameStatus, setNicknameStatus] = useState('idle');
   const [nicknameMessage, setNicknameMessage] = useState('');
-
-  const goLogin = () => {
-    navigate('/?login=open');
-  };
-
-  const handleSignup = () => {
-    navigate('/');
-  };
 
   // 더미 중복 데이터 (나중에 API 연동 시 교체)
   const usedEmails = ['test@example.com', 'hello@travly.com'];
   const usedNicknames = ['travler', 'admin', 'tester'];
 
+  const onChange = (e) => {
+    setForm({ ...form, [e.target.id]: e.target.value });
+  };
+
+  const goLogin = () => {
+    navigate('/?login=open');
+  };
+
+  // ✅ Supabase 이메일 회원가입
+  const handleSignup = async () => {
+    if (!form.email || !form.nickname || !form.password || !form.passwordCheck) {
+      alert('모든 필드를 입력해 주세요.');
+      return;
+    }
+
+    if (form.password !== form.passwordCheck) {
+      alert('비밀번호가 일치하지 않습니다.');
+      return;
+    }
+
+    const result = await signup({
+      email: form.email.trim(),
+      password: form.password.trim(),
+      nickname: form.nickname.trim(),
+    });
+
+    if (!result.success) {
+      alert('회원가입 실패: ' + result.error.message);
+      return;
+    }
+
+    alert('회원가입 성공! 이메일 인증을 완료해주세요.');
+    navigate('/');
+  };
+
+  // ✅ 이메일 중복 체크 (더미)
   const handleEmailCheck = () => {
-    const value = email.trim();
+    const value = form.email.trim();
 
     if (!value) {
       setEmailStatus('error');
@@ -50,8 +84,9 @@ function SignupComp() {
     }
   };
 
+  // ✅ 닉네임 중복 체크 (더미)
   const handleNicknameCheck = () => {
-    const value = nickname.trim();
+    const value = form.nickname.trim();
 
     if (!value) {
       setNicknameStatus('error');
@@ -68,6 +103,24 @@ function SignupComp() {
       setNicknameStatus('ok');
       setNicknameMessage('사용 가능한 닉네임입니다.');
     }
+  };
+
+  // ✅ 카카오 로그인/회원가입 (SignupComp에서 직접 호출)
+  const handleKakaoSignup = async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'kakao',
+      options: {
+        redirectTo: `${window.location.origin}/`,
+      },
+    });
+
+    if (error) {
+      console.error('카카오 로그인 에러:', error.message);
+      alert('카카오 로그인 중 에러가 발생했습니다: ' + error.message);
+      return;
+    }
+
+    // data.url로 리디렉션이 일어나기 때문에 여기서 추가 동작은 거의 필요 없음
   };
 
   return (
@@ -109,29 +162,29 @@ function SignupComp() {
             borderBottomRightRadius: '50px',
           }}
         >
-          <div className="w-full h-full px-10 pt-10 pb-8 flex flex-col">
+          <div className="w-full h-full px-10 pt-10 pb-8 flex flex-col items-center">
             <h2 className="text-center font-semibold mb-6" style={{ fontSize: '24px', color: '#ff7a00' }}>
               회원 가입
             </h2>
 
             {/* 폼 영역 */}
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4" style={{ width: '320px' }}>
               {/* 이메일 */}
               <div>
-                <label htmlFor="signup-email" className="block mb-1 text-slate-800" style={{ fontSize: '14px' }}>
+                <label htmlFor="email" className="block mb-1 text-slate-800" style={{ fontSize: '14px' }}>
                   이메일
                 </label>
                 <div className="flex gap-2">
                   <div
                     className="rounded-md border border-slate-300 px-3 flex items-center"
-                    style={{ width: '300px', height: '31px' }}
+                    style={{ width: '100%', height: '31px' }}
                   >
                     <input
-                      id="signup-email"
+                      id="email"
                       type="email"
-                      value={email}
+                      value={form.email}
                       onChange={(e) => {
-                        setEmail(e.target.value);
+                        onChange(e);
                         setEmailStatus('idle');
                         setEmailMessage('');
                       }}
@@ -158,20 +211,20 @@ function SignupComp() {
 
               {/* 닉네임 */}
               <div>
-                <label htmlFor="signup-nickname" className="block mb-1 text-slate-800" style={{ fontSize: '14px' }}>
+                <label htmlFor="nickname" className="block mb-1 text-slate-800" style={{ fontSize: '14px' }}>
                   닉네임
                 </label>
                 <div className="flex gap-2">
                   <div
                     className="rounded-md border border-slate-300 px-3 flex items-center"
-                    style={{ width: '300px', height: '31px' }}
+                    style={{ width: '100%', height: '31px' }}
                   >
                     <input
-                      id="signup-nickname"
+                      id="nickname"
                       type="text"
-                      value={nickname}
+                      value={form.nickname}
                       onChange={(e) => {
-                        setNickname(e.target.value);
+                        onChange(e);
                         setNicknameStatus('idle');
                         setNicknameMessage('');
                       }}
@@ -198,16 +251,18 @@ function SignupComp() {
 
               {/* 비밀번호 */}
               <div>
-                <label htmlFor="signup-password" className="block mb-1 text-slate-800" style={{ fontSize: '14px' }}>
+                <label htmlFor="password" className="block mb-1 text-slate-800" style={{ fontSize: '14px' }}>
                   비밀번호
                 </label>
                 <div
                   className="rounded-md border border-slate-300 px-3 flex items-center"
-                  style={{ width: '300px', height: '31px' }}
+                  style={{ width: '75%', height: '31px' }}
                 >
                   <input
-                    id="signup-password"
+                    id="password"
                     type="password"
+                    value={form.password}
+                    onChange={onChange}
                     className="w-full outline-none text-slate-900 placeholder-slate-400"
                     style={{ fontSize: '14px' }}
                     placeholder="비밀번호를 입력하세요"
@@ -217,20 +272,18 @@ function SignupComp() {
 
               {/* 비밀번호 확인 */}
               <div>
-                <label
-                  htmlFor="signup-password-confirm"
-                  className="block mb-1 text-slate-800"
-                  style={{ fontSize: '14px' }}
-                >
+                <label htmlFor="passwordCheck" className="block mb-1 text-slate-800" style={{ fontSize: '14px' }}>
                   비밀번호 확인
                 </label>
                 <div
                   className="rounded-md border border-slate-300 px-3 flex items-center"
-                  style={{ width: '300px', height: '31px' }}
+                  style={{ width: '75%', height: '31px' }}
                 >
                   <input
-                    id="signup-password-confirm"
+                    id="passwordCheck"
                     type="password"
+                    value={form.passwordCheck}
+                    onChange={onChange}
                     className="w-full outline-none text-slate-900 placeholder-slate-400"
                     style={{ fontSize: '14px' }}
                     placeholder="비밀번호를 다시 입력하세요"
@@ -239,11 +292,12 @@ function SignupComp() {
               </div>
 
               {/* 회원가입 버튼 */}
-              <div className="mt-2">
+              <div className="mt-2 flex justify-center">
                 <button
                   type="button"
                   onClick={handleSignup}
-                  className="w-[300px] h-[36px] rounded-md bg-[#2D7FEA] text-white text-sm font-semibold hover:bg-sky-600 transition"
+                  className="h-[36px] rounded-md bg-[#2D7FEA] text-white text-sm font-semibold hover:bg-sky-600 transition"
+                  style={{ width: '260px' }}
                 >
                   회원가입
                 </button>
@@ -260,11 +314,12 @@ function SignupComp() {
 
               <button
                 type="button"
+                onClick={handleKakaoSignup} // ✅ 여기서 바로 카카오 OAuth 호출
                 className="flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white"
                 style={{ width: '260px', height: '36px' }}
               >
                 <div
-                  className="flex items-center justify-center rounded-full overflow-hidden"
+                  className="flex items	center justify-center rounded-full overflow-hidden"
                   style={{
                     width: '22px',
                     height: '22px',

@@ -1,105 +1,79 @@
 // src/common/HeaderComp.jsx
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FaSearch, FaPen, FaUser, FaBell } from 'react-icons/fa';
-
-import SearchComp from './SearchComp';
+import React, { useState } from 'react';
+import TravLyLogo01 from './images/TravLyLogo01.png';
+import TravlyLogo02 from './images/TravlyLogo02.png';
+import utilBell from './images/utilBell.png';
+import utilPen from './images/utilPen.png';
+import utilSearch from './images/utilSearch.png';
+import utilUser from './images/utilUser.png';
+import utilbellon from './images/utilbellon.png';
+import { Link, useNavigate } from 'react-router-dom';
+import NoticeComp from './NoticeComp';
 import SideProfileComp from './SideProfileComp';
+import { useAuth } from './AuthStateContext';
 
-function HeaderComp({ onUserClick, onWriteClick, isLoggedIn, onLoginOpen }) {
+function HeaderComp() {
   const navigate = useNavigate();
+  const [isNoticeOpen, setIsNoticeOpen] = useState(false);
+  const [hasNewNotice, setHasNewNotice] = useState(true);
 
-  // 모달/사이드 패널 상태 (로그인 제외)
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const { userData, openLoginModal, isUserCompOpen, toggleUserComp } = useAuth();
 
-  // 검색 모달 열기
-  const openSearch = () => setIsSearchOpen(true);
-
-  // 로그인 모달 열기: 항상 부모(HomeComp)의 onLoginOpen만 사용
-  const openLogin = () => {
-    if (onLoginOpen) {
-      onLoginOpen();
+  // 사람 아이콘 클릭 시: 로그인 여부에 따라 동작 분기
+  const handleUserClick = () => {
+    if (userData?.isLoggedIn) {
+      toggleUserComp();
+      return;
     }
+
+    openLoginModal();
   };
 
-  // 사람 버튼 클릭
-  const handleUserButtonClick = () => {
-    if (onUserClick) {
-      onUserClick();
-    } else {
-      openLogin();
-    }
-  };
+  const toggleNotice = () => {
+    const nextState = !isNoticeOpen;
+    setIsNoticeOpen(nextState);
 
-  // 연필 버튼 클릭
-  const handleWriteButtonClick = () => {
-    if (onWriteClick) {
-      onWriteClick();
-    } else {
-      openLogin();
+    if (nextState && hasNewNotice) {
+      setHasNewNotice(false);
+      // TODO: 서버에 "알림 읽음" API 호출
     }
   };
 
   return (
-    <>
-      {/* 고정 헤더 */}
-      <header className="fixed top-0 left-0 right-0 z-50 flex justify-center bg-white/95 border-b border-slate-200">
-        <div className="h-20 w-full max-w-[1440px] px-8 flex items-center justify-between">
-          {/* 로고 */}
-          <button type="button" onClick={() => navigate('/')} className="text-[22px] font-bold text-slate-900">
-            Travly
-          </button>
-
-          {/* 오른쪽 아이콘들 */}
-          <nav className="flex items-center gap-4">
-            {/* 검색 */}
-            <button
-              type="button"
-              aria-label="검색"
-              onClick={openSearch}
-              className="w-9 h-9 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center hover:bg-slate-200 transition"
-            >
-              <FaSearch className="text-[16px]" />
-            </button>
-
-            {/* 글쓰기 */}
-            <button
-              type="button"
-              aria-label="글쓰기"
-              onClick={handleWriteButtonClick}
-              className="w-9 h-9 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center hover:bg-slate-200 transition"
-            >
-              <FaPen className="text-[16px]" />
-            </button>
-
-            {/* 프로필 */}
-            <button
-              type="button"
-              aria-label={isLoggedIn ? '프로필' : '로그인'}
-              onClick={handleUserButtonClick}
-              className="w-9 h-9 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center hover:bg-slate-200 transition"
-            >
-              <FaUser className="text-[16px]" />
-            </button>
-
-            {/* 알림 */}
-            <button
-              type="button"
-              aria-label="알림 / 로그인"
-              onClick={openLogin}
-              className="w-9 h-9 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center hover:bg-slate-200 transition"
-            >
-              <FaBell className="text-[16px]" />
-            </button>
-          </nav>
+    <div className="container-fluid flex justify-between items-center px-[40px] h-[80px] relative">
+      <Link to="/">
+        <div className="flex h-[60px] ">
+          <img src={TravlyLogo02} alt="Travly 로고 2" />
+          <img src={TravLyLogo01} alt="Travly 로고 1" />
         </div>
-      </header>
+      </Link>
 
-      {/* 모달 / 사이드 패널 (검색 / 사이드 프로필만) */}
-      <SearchComp open={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
-      <SideProfileComp open={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
-    </>
+      <ul className="flex w-[258px] h-[48px] justify-between">
+        <li>
+          <Link to="/board">
+            <img src={utilSearch} alt="검색" />
+          </Link>
+        </li>
+        <li>
+          <Link to="/board/write">
+            <img src={utilPen} alt="글쓰기" />
+          </Link>
+        </li>
+        {/* 사람 아이콘 */}
+        <li className="cursor-pointer" onClick={handleUserClick}>
+          <img src={utilUser} alt="사용자" />
+        </li>
+        {/* 알림 종 아이콘 */}
+        <li className="cursor-pointer relative" onClick={toggleNotice}>
+          <img src={isNoticeOpen ? utilbellon : utilBell} alt="알림" />
+          {hasNewNotice && (
+            <div className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
+          )}
+          {isNoticeOpen && <NoticeComp />}
+        </li>
+      </ul>
+      {isUserCompOpen && <SideProfileComp />}
+    </div>
   );
 }
 
