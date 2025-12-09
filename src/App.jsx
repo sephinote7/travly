@@ -8,6 +8,10 @@ import SignupComp from './pages/signup/SignupComp';
 import MemberInfoRoutes from './Routes/MemberInfoRoutes';
 import MemberInfoComp from '../src/pages/memberInfo/MemberInfoComp';
 import MemberInfoModify from '../src/pages/memberInfo/MemberInfoModifyComp';
+import BoardRoutes from './Routes/BoardRoutes';
+import PlannerMap from './pages/board/components/PlannerMap';
+import ListComp from './pages/board/ListComp';
+import MyBoardListPage from './pages/board/MyBoardListPage';
 
 /* eslint-disable */
 function App() {
@@ -18,6 +22,9 @@ function App() {
         <Route path="/" element={<LayoutComp />}>
           {/* 1. Board 관련 모든 라우트를 한 줄로 통합 */}
           {BoardRoutes}
+          <Route path="write" element={<PlannerMap />} />
+          <Route path="/posts" element={<ListComp />} />
+          <Route path="/my-list" element={<MyBoardListPage />} />
           {/* 2. 나머지 라우트 (최상위 및 기타) */}
           {HomeRoutes}
           {QnaRoutes}
