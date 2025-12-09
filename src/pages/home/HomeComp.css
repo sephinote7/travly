@@ -1,0 +1,146 @@
+/* 페이지 전체 래퍼: 중앙 정렬 */
+.home-root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #ffffff;
+}
+
+/* ========== 히어로 섹션 (1440 x 1024.26) ========== */
+
+.home-hero {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 80px; /* fixed Header 높이만큼 아래로 */
+}
+
+.home-hero-inner {
+  width: 1440px; /* 가로 1440 */
+  height: 1024.26px; /* 세로 1024.26 */
+  position: relative;
+  overflow: hidden;
+  background: #000000; /* 나중에 이미지로 교체 */
+  background-size: cover;
+  background-position: center;
+  background-image: url('/src/assets/Vector.png');
+}
+
+/* 기존 home-hero-text를 중앙 배치용으로 변경 */
+.home-hero-text {
+  position: absolute;
+  inset: 0; /* 상하좌우 0 */
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* 가로 중앙 */
+  justify-content: center; /* 세로 중앙 */
+  text-align: center;
+  color: #ffffff;
+}
+
+/* 타이틀/서브타이틀 폰트만 남기고 위치 관련 속성은 제거 */
+.home-hero-title {
+  font-size: 48px; /* 이미 Tailwind text-hero-title 쓰면 생략 가능 */
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+/* ========== 슬라이드 배경 (1440 x 700) ========== */
+
+/* 바깥 배경 이미지는 이 클래스에 설정 */
+.home-slide-bg {
+  /* 예시: 파일 준비되면 이 부분만 실제 경로로 교체
+     background-image: url("/images/weekly-top-bg.jpg");
+  */
+  background-color: #2b4b1a; /* 시안처럼 초록 톤 임시값 */
+}
+
+/* ========== 장점 섹션 (1080 x 540 박스) ========== */
+
+.home-benefits-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 80px 0;
+  background: #f9fafb;
+}
+
+.home-benefits {
+  width: 1080px; /* 가로 1080 */
+  height: 540px; /* 세로 540 */
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+  padding: 40px 56px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.home-benefits-title {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #3b82f6;
+  margin-bottom: 10px;
+}
+
+.home-benefits-desc {
+  font-size: 16px;
+  color: #6b7280;
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.home-benefits-cards {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  gap: 32px;
+}
+
+.benefit-card {
+  flex: 1;
+  background: #f9fafb;
+  border-radius: 18px;
+  padding: 24px 20px;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.benefit-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: #eff6ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  font-size: 20px;
+}
+
+.benefit-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #111827;
+}
+
+.benefit-text {
+  font-size: 16px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+/* Q&A 섹션 배경 (1440 x 600) */
+.home-qna-bg {
+  /* 실제 배경 이미지 파일 생기면 아래 한 줄만 수정하면 됨 */
+  /* background-image: url("/images/qna-bg.jpg"); */
+  background-color: #0f172a; /* 임시: 어두운 네이비 */
+}
+
+.highlight-2a7fff {
+  color: #2a7fff;
+}

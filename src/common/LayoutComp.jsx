@@ -1,13 +1,12 @@
+// src/common/LayoutComp.jsx
 import { Outlet, useLocation } from 'react-router-dom';
 import HeaderComp from './HeaderComp';
 import FooterComp from './FooterComp';
-import LoginComp from './LoginComp';
-import SearchComp from './SearchComp';
-import SideProfileComp from './SideProfileComp';
 
-// Header Footer 동시에 관리 Write와 Modify에서는 렌더링 되지 않도록 제어
+// 변경: 더 이상 여기서는 LoginComp / SearchComp / SideProfileComp를 import하지 않음
+// 모달 관리는 HeaderComp 안에서만 처리
 
-const Layout = () => {
+const LayoutComp = () => {
   // 1. 현재 URL 경로 정보를 가져옵니다.
   const location = useLocation();
 
@@ -15,29 +14,15 @@ const Layout = () => {
   const HIDDEN_PATH_PREFIXES = ['/board/write', '/board/modify'];
 
   // 3. 현재 경로가 숨김 대상인지 확인하는 로직
-  // 현재 경로(location.pathname)가 정의된 목록 중 어느 하나로 '시작'하는지 확인합니다.
-  const isHiddenPath = HIDDEN_PATH_PREFIXES.some((prefix) =>
-    location.pathname.startsWith(prefix)
-  );
-
-  /* **예시 작동 방식:**
-    - 현재 경로가 '/write' -> isHiddenPath: true
-    - 현재 경로가 '/modify/123' -> isHiddenPath: true (modify로 시작하므로)
-    - 현재 경로가 '/home' -> isHiddenPath: false
-    */
+  const isHiddenPath = HIDDEN_PATH_PREFIXES.some((prefix) => location.pathname.startsWith(prefix));
 
   return (
     <>
       {/* isHiddenPath가 false일 때(숨길 경로가 아닐 때)만 Header 표시 */}
       {!isHiddenPath && <HeaderComp />}
 
-      {!isHiddenPath && <LoginComp />}
-
-      {!isHiddenPath && <SearchComp />}
-
-      {!isHiddenPath && <SideProfileComp />}
-
-      <main>
+      {/* 변경: main에 Tailwind로 헤더 높이만큼 padding-top 적용 */}
+      <main className={!isHiddenPath ? 'pt-20' : ''}>
         {/* 모든 페이지의 콘텐츠는 여기서 렌더링됩니다. */}
         <Outlet />
       </main>
@@ -48,4 +33,4 @@ const Layout = () => {
   );
 };
 
-export default Layout;
+export default LayoutComp;

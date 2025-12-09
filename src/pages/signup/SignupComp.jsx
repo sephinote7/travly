@@ -1,7 +1,294 @@
-import React from 'react';
+// src/pages/signup/SignupComp.jsx
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import kakaoIcon from '../../assets/kakao.png';
+import travlyLogo from '../../assets/logo2.png';
 
 function SignupComp() {
-  return <div>SignupComp1</div>;
+  const navigate = useNavigate();
+
+  // 입력값 상태
+  const [email, setEmail] = useState('');
+  const [nickname, setNickname] = useState('');
+
+  // 이메일 / 닉네임 중복 확인 상태
+  // status: 'idle' | 'ok' | 'error'
+  const [emailStatus, setEmailStatus] = useState('idle');
+  const [emailMessage, setEmailMessage] = useState('');
+  const [nicknameStatus, setNicknameStatus] = useState('idle');
+  const [nicknameMessage, setNicknameMessage] = useState('');
+
+  const goLogin = () => {
+    navigate('/?login=open');
+  };
+
+  const handleSignup = () => {
+    navigate('/');
+  };
+
+  // 더미 중복 데이터 (나중에 API 연동 시 교체)
+  const usedEmails = ['test@example.com', 'hello@travly.com'];
+  const usedNicknames = ['travler', 'admin', 'tester'];
+
+  const handleEmailCheck = () => {
+    const value = email.trim();
+
+    if (!value) {
+      setEmailStatus('error');
+      setEmailMessage('이메일을 입력해주세요.');
+      return;
+    }
+
+    const isUsed = usedEmails.some((e) => e.toLowerCase() === value.toLowerCase());
+
+    if (isUsed) {
+      setEmailStatus('error');
+      setEmailMessage('이미 사용 중인 이메일입니다.');
+    } else {
+      setEmailStatus('ok');
+      setEmailMessage('사용 가능한 이메일입니다.');
+    }
+  };
+
+  const handleNicknameCheck = () => {
+    const value = nickname.trim();
+
+    if (!value) {
+      setNicknameStatus('error');
+      setNicknameMessage('닉네임을 입력해주세요.');
+      return;
+    }
+
+    const isUsed = usedNicknames.some((n) => n.toLowerCase() === value.toLowerCase());
+
+    if (isUsed) {
+      setNicknameStatus('error');
+      setNicknameMessage('이미 사용 중인 닉네임입니다.');
+    } else {
+      setNicknameStatus('ok');
+      setNicknameMessage('사용 가능한 닉네임입니다.');
+    }
+  };
+
+  return (
+    <div className="w-full flex justify-center bg-slate-100 py-16">
+      {/* 540 x 700 프레임 2개를 붙인 전체 래퍼 */}
+      <div
+        className="flex shadow-[0_18px_40px_rgba(15,23,42,0.18)] overflow-hidden"
+        style={{ width: '1080px', height: '700px' }}
+      >
+        {/* 왼쪽 프레임 */}
+        <div
+          className="flex flex-col items-center justify-center bg-[#2D7FEA] text-center"
+          style={{
+            width: '540px',
+            height: '700px',
+            borderTopLeftRadius: '50px',
+            borderBottomLeftRadius: '50px',
+          }}
+        >
+          <h4 className="text-white mb-6" style={{ fontSize: '20px', fontWeight: 600 }}>
+            Travly에 오신 것을 환영합니다!
+          </h4>
+
+          <div
+            className="bg-white flex items-center justify-center"
+            style={{ width: '260px', height: '260px', borderRadius: '40px' }}
+          >
+            <img src={travlyLogo} alt="Travly 로고" className="w-[200px] h-auto object-contain" />
+          </div>
+        </div>
+
+        {/* 오른쪽 프레임 */}
+        <div
+          className="bg-white flex flex-col items-center"
+          style={{
+            width: '540px',
+            height: '700px',
+            borderTopRightRadius: '50px',
+            borderBottomRightRadius: '50px',
+          }}
+        >
+          <div className="w-full h-full px-10 pt-10 pb-8 flex flex-col">
+            <h2 className="text-center font-semibold mb-6" style={{ fontSize: '24px', color: '#ff7a00' }}>
+              회원 가입
+            </h2>
+
+            {/* 폼 영역 */}
+            <div className="flex flex-col gap-4">
+              {/* 이메일 */}
+              <div>
+                <label htmlFor="signup-email" className="block mb-1 text-slate-800" style={{ fontSize: '14px' }}>
+                  이메일
+                </label>
+                <div className="flex gap-2">
+                  <div
+                    className="rounded-md border border-slate-300 px-3 flex items-center"
+                    style={{ width: '300px', height: '31px' }}
+                  >
+                    <input
+                      id="signup-email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        setEmailStatus('idle');
+                        setEmailMessage('');
+                      }}
+                      className="w-full outline-none text-slate-900 placeholder-slate-400"
+                      style={{ fontSize: '14px' }}
+                      placeholder="이메일을 입력하세요"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleEmailCheck}
+                    className="rounded-md bg-[#2D7FEA] text-white flex items-center justify-center"
+                    style={{ width: '106px', height: '31px', fontSize: '14px' }}
+                  >
+                    중복 확인
+                  </button>
+                </div>
+                {emailMessage && (
+                  <p className={`mt-1 text-xs ${emailStatus === 'ok' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                    {emailMessage}
+                  </p>
+                )}
+              </div>
+
+              {/* 닉네임 */}
+              <div>
+                <label htmlFor="signup-nickname" className="block mb-1 text-slate-800" style={{ fontSize: '14px' }}>
+                  닉네임
+                </label>
+                <div className="flex gap-2">
+                  <div
+                    className="rounded-md border border-slate-300 px-3 flex items-center"
+                    style={{ width: '300px', height: '31px' }}
+                  >
+                    <input
+                      id="signup-nickname"
+                      type="text"
+                      value={nickname}
+                      onChange={(e) => {
+                        setNickname(e.target.value);
+                        setNicknameStatus('idle');
+                        setNicknameMessage('');
+                      }}
+                      className="w-full outline-none text-slate-900 placeholder-slate-400"
+                      style={{ fontSize: '14px' }}
+                      placeholder="닉네임을 입력하세요"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleNicknameCheck}
+                    className="rounded-md bg-[#2D7FEA] text-white flex items-center justify-center"
+                    style={{ width: '106px', height: '31px', fontSize: '14px' }}
+                  >
+                    중복 확인
+                  </button>
+                </div>
+                {nicknameMessage && (
+                  <p className={`mt-1 text-xs ${nicknameStatus === 'ok' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                    {nicknameMessage}
+                  </p>
+                )}
+              </div>
+
+              {/* 비밀번호 */}
+              <div>
+                <label htmlFor="signup-password" className="block mb-1 text-slate-800" style={{ fontSize: '14px' }}>
+                  비밀번호
+                </label>
+                <div
+                  className="rounded-md border border-slate-300 px-3 flex items-center"
+                  style={{ width: '300px', height: '31px' }}
+                >
+                  <input
+                    id="signup-password"
+                    type="password"
+                    className="w-full outline-none text-slate-900 placeholder-slate-400"
+                    style={{ fontSize: '14px' }}
+                    placeholder="비밀번호를 입력하세요"
+                  />
+                </div>
+              </div>
+
+              {/* 비밀번호 확인 */}
+              <div>
+                <label
+                  htmlFor="signup-password-confirm"
+                  className="block mb-1 text-slate-800"
+                  style={{ fontSize: '14px' }}
+                >
+                  비밀번호 확인
+                </label>
+                <div
+                  className="rounded-md border border-slate-300 px-3 flex items-center"
+                  style={{ width: '300px', height: '31px' }}
+                >
+                  <input
+                    id="signup-password-confirm"
+                    type="password"
+                    className="w-full outline-none text-slate-900 placeholder-slate-400"
+                    style={{ fontSize: '14px' }}
+                    placeholder="비밀번호를 다시 입력하세요"
+                  />
+                </div>
+              </div>
+
+              {/* 회원가입 버튼 */}
+              <div className="mt-2">
+                <button
+                  type="button"
+                  onClick={handleSignup}
+                  className="w-[300px] h-[36px] rounded-md bg-[#2D7FEA] text-white text-sm font-semibold hover:bg-sky-600 transition"
+                >
+                  회원가입
+                </button>
+              </div>
+            </div>
+
+            {/* OR 라인 + 카카오톡 회원가입 버튼 */}
+            <div className="mt-6 mb-3 flex flex-col items-center gap-2">
+              <div className="flex items-center w-full justify-center gap-3">
+                <div className="h-px flex-1 bg-slate-200" />
+                <span className="text-[11px] text-slate-400">OR</span>
+                <div className="h-px flex-1 bg-slate-200" />
+              </div>
+
+              <button
+                type="button"
+                className="flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white"
+                style={{ width: '260px', height: '36px' }}
+              >
+                <div
+                  className="flex items-center justify-center rounded-full overflow-hidden"
+                  style={{
+                    width: '22px',
+                    height: '22px',
+                    backgroundColor: '#FEE500',
+                  }}
+                >
+                  <img src={kakaoIcon} alt="카카오" className="w-[18px] h-[18px] object-contain" />
+                </div>
+                <span className="text-[13px] text-slate-900">카카오톡으로 회원가입</span>
+              </button>
+            </div>
+
+            {/* 하단: 이미 회원이신가요? 로그인 하기 */}
+            <div className="mt-auto text-center" style={{ fontSize: '13px' }}>
+              <span className="text-slate-500">이미 회원이신가요? </span>
+              <button type="button" onClick={goLogin} className="text-[#ff7a00] hover:underline">
+                로그인 하기
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default SignupComp;
