@@ -1,8 +1,8 @@
 // src/pages/signup/SignupComp.jsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import kakaoIcon from '../../assets/kakao.png';
-import travlyLogo from '../../assets/logo2.png';
+import kakaoIcon from '../../common/images/kakao.png';
+import travlyLogo from '../../common/images/logo2.png';
 
 function SignupComp() {
   const navigate = useNavigate();

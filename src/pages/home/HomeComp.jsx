@@ -1,4 +1,6 @@
 // src/pages/home/HomeComp.jsx (완전한 최신 버전)
+// src/pages/home/HomeComp.jsx
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HeaderComp from '../../common/HeaderComp';
@@ -6,18 +8,18 @@ import LoginComp from '../../common/LoginComp';
 import './HomeComp.css';
 
 // 장점 섹션 아이콘 이미지
-import airplaneIcon from '../../assets/airplane.png';
-import museumIcon from '../../assets/museum.png';
-import earthIcon from '../../assets/earth.png';
+import airplaneIcon from '../../common/images/airplane.png';
+import museumIcon from '../../common/images/museum.png';
+import earthIcon from '../../common/images/earth.png';
 
 // TOP3 슬라이드 카드 이미지
-import topImage1 from '../../assets/forest1.png';
-import topImage2 from '../../assets/forest2.png';
-import topImage3 from '../../assets/forest3.png';
+import topImage1 from '../../common/images/forest1.png';
+import topImage2 from '../../common/images/forest2.png';
+import topImage3 from '../../common/images/forest3.png';
 
 // 북마크 아이콘 이미지
-import bookmarkOn from '../../assets/bookmark.png';
-import bookmarkOff from '../../assets/bookmarkempty.png';
+import bookmarkOn from '../../common/images/bookmark.png';
+import bookmarkOff from '../../common/images/bookmarkempty.png';
 
 // ===== 새로 올라온 이야기 더미 데이터 =====
 const initialRecentCards = [

@@ -2,10 +2,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import defaultAvatar from '../../assets/logo2.png';
-import thumb1 from '../../assets/forest1.png';
-import thumb2 from '../../assets/forest2.png';
-import thumb3 from '../../assets/forest3.png';
+// src/pages/memberInfo/MemberInfoComp.jsx
+
+import defaultAvatar from '../../common/images/logo2.png';
+import thumb1 from '../../common/images/forest1.png';
+import thumb2 from '../../common/images/forest2.png';
+import thumb3 from '../../common/images/forest3.png';
 
 const PROFILE_STORAGE_KEY = 'travlyProfile';
 

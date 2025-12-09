@@ -23,7 +23,7 @@
   background: #000000; /* 나중에 이미지로 교체 */
   background-size: cover;
   background-position: center;
-  background-image: url('/src/assets/Vector.png');
+  background-image: url('/src/common/images/Vector.png');
 }
 
 /* 기존 home-hero-text를 중앙 배치용으로 변경 */
