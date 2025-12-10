@@ -7,7 +7,7 @@ import { Navigation, Pagination, Autoplay } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import testprofile from '../../common/images/testprofile.gif';
 import noimage from '../../common/images/noimage.png';
@@ -16,9 +16,13 @@ import badge02 from '../../common/images/badge02.png';
 import badge03 from '../../common/images/badge03.png';
 import badge04 from '../../common/images/badge04.png';
 import badge05 from '../../common/images/badge05.png';
+import weeklyboard from './images/weeklyboard.png';
+import dayjs from 'dayjs';
 
 export default function WeeklyBoardTopList() {
   const [topBoards, setTopBoards] = useState([]);
+
+  const navigate = useNavigate();
 
   const badgeImages = {
     1: badge01,
@@ -42,15 +46,21 @@ export default function WeeklyBoardTopList() {
   }, []);
 
   return (
-    <section className="py-12 bg-[#f8fbe1] h-[700px]">
-      <div className="max-w-[1080px] mx-auto px-4 flex flex-col items-center">
-        <div className="flex justify-between items-center w-full mb-6">
-          <h2 className="text-xl font-semibold">
-            이번 주{' '}
-            <span className="text-green-600">가장 많이 찾은 이야기</span> TOP 3
+    <section
+      className="py-12  h-[700px]"
+      style={{ backgroundImage: `url(${weeklyboard})` }}
+    >
+      <div className="w-[1080px] mx-auto px-4 flex flex-col items-center">
+        <div className="flex justify-between mx-auto rounded-t-[10px] items-center h-[100px] w-[1080px] px-[30px] bg-amber-300">
+          <h2 className="h3 ">
+            이번 주 <span className="text-sky-400">가장 많이 찾은 이야기</span>{' '}
+            TOP 3
           </h2>
-          <Link to="/board" className="text-sm text-gray-500 hover:text-black">
-            + 더 많은 인기글 보기
+          <Link
+            to="/board"
+            className="font-bold text-sky-400 hover:text-sky-900"
+          >
+            + 이번 주 인기 여행기 더 보기
           </Link>
         </div>
 
@@ -58,7 +68,9 @@ export default function WeeklyBoardTopList() {
             2) 데이터가 없을 때 로딩
            ----------------------------- */}
         {topBoards.length === 0 ? (
-          <p className="text-gray-500">로딩 중...</p>
+          <p className="text-gray-500 w-[1080px] mx-auto rounded-b-[10px] overflow-hidden bg-white h-[460px] flex justify-center items-center h2">
+            로딩 중...
+          </p>
         ) : (
           <Swiper
             modules={[Navigation, Pagination, Autoplay]}
@@ -68,69 +80,83 @@ export default function WeeklyBoardTopList() {
             pagination={{ clickable: true }}
             autoplay={{ delay: 10000 }}
             loop
-            className="rounded-xl overflow-hidden w-[1080px] h-[460px]"
+            className="rounded-xl overflow-hidden w-[1080px] h-[full]"
           >
             {topBoards.map((board) => (
               <SwiperSlide key={board.id}>
                 {/* 전체 카드 클릭 시 board 상세페이지로 이동 */}
                 <Link to={`/board/${board.id}`} className="block w-full h-full">
-                  <div className="bg-white p-8 rounded-xl shadow flex flex-col md:flex-row gap-8 w-full h-[460px] justify-between">
+                  <div className="bg-white p-8 rounded-b-[10px] shadow flex flex-col md:flex-row gap-8 w-full h-[460px] justify-between">
                     {/* --- Left Text Area --- */}
                     <div className="flex-1 flex flex-col justify-between">
                       {/* Title */}
-                      <div className="flex items-center gap-2 mb-3">
-                        <h3 className="text-2xl font-extrabold hover:underline">
-                          {board.title}
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <h3 className="h2 font-extrabold hover:underline">
+                          {board.title && board.title.length > 25
+                            ? `${board.title.substring(0, 20)}...`
+                            : board.title}
                         </h3>
                         <span className="text-yellow-400 text-2xl">🔖</span>
                       </div>
 
                       {/* Date */}
-                      <p className="text-gray-500 text-sm mb-4 ms-auto">
-                        {board.createdAt}
+                      <p className="text-gray-500 ctext mb-4 ms-auto">
+                        {dayjs(board.createdAt).format('YYYY.MM.DD | HH:mm')}
                       </p>
 
                       {/* User Info */}
-                      <Link
-                        to={`/board/member/${board.memberId}`}
-                        onClick={(e) => e.stopPropagation()}
+
+                      <div
+                        // 마우스 커서를 포인터로 변경하여 클릭 가능한 요소처럼 보이게 함
+                        style={{ cursor: 'pointer' }}
+                        // 1. 이벤트 전파 방지: 이 부분이 핵심! 상위 게시글 링크(A)로 클릭 이벤트가 전달되는 것을 막음.
+                        onClick={(e) => {
+                          e.stopPropagation();
+
+                          // 2. 프로그래밍 방식으로 페이지 이동
+                          navigate(`/board/member/${board.memberId}`);
+                        }}
                       >
                         <div className="flex items-center gap-5 mb-4 ms-auto">
                           <img
                             src={board.profileImg ?? testprofile}
                             alt="profile"
-                            className="w-30 h-30 rounded-full object-cover hover:opacity-80 transition ms-auto"
+                            className="w-[70px] h-[70px] rounded-full object-cover hover:opacity-80 transition ms-auto block border border-neutral-500"
                           />
 
                           <div className="flex  gap-3 flex-col">
-                            <p className="text-sm font-semibold text-right">
-                              {board.memberName}
-                            </p>
+                            <p className="h5 text-right">{board.memberName}</p>
                             <img
-                              src={badgeImages[board.badgeI d]}
+                              src={badgeImages[board.badgeId]}
                               alt="badge"
-                              className="w-[100px] h-[40px] mt-1"
+                              className="w-[90px] h-[30px] mt-1"
                             />
                           </div>
                         </div>
-                      </Link>
+                      </div>
 
                       {/* Tags */}
-                      <div className="text-gray-500 text-sm mb-4">
-                        {board.tags?.map((tag, idx) => (
+                      <div className="ctext mb-4 line-clamp-1">
+                        {/* 1. 태그 목록을 최대 5개까지 잘라냅니다. */}
+                        {board.tags?.slice(0, 5).map((tag, idx) => (
                           <span key={idx} className="mr-2">
                             #{tag}
                           </span>
                         ))}
+
+                        {/* 2. 전체 태그 개수가 5개를 초과하는지 확인합니다. */}
+                        {board.tags && board.tags.length > 5 && (
+                          <span className="mr-2 text-gray-500">...</span>
+                        )}
                       </div>
 
                       {/* Content */}
-                      <p className="text-gray-700 text-[16px] leading-relaxed mb-6 hover:underline">
-                        {board.content?.substring(0, 70) ?? ''}
+                      <p className="p line-clamp-3 h-auto mb-6 hover:underline">
+                        {board.content ?? ''}
                       </p>
 
                       {/* Like + View */}
-                      <div className="flex items-center gap-6 text-gray-700 font-semibold">
+                      <div className="flex items-center gap-6 text-gray-700 font-semibold ms-auto">
                         <div className="flex items-center gap-2">
                           <span className="text-red-500 text-lg">❤️</span>
                           <span>{board.likeCount}</span>
@@ -145,8 +171,9 @@ export default function WeeklyBoardTopList() {
 
                     {/* --- Right Image (클릭 시 board 상세로 이동) --- */}
                     <img
-                      src={board.thumbnailUrl ?? noimage}
-                      alt="thumbnail"
+                      // ⭐ 수정: board.cardImg 자체가 완전한 URL입니다.
+                      src={board.cardImg || noimage}
+                      alt={board.cardImg}
                       className="w-full md:w-[480px] h-[380px] object-cover rounded-xl hover:opacity-90 transition"
                     />
                   </div>

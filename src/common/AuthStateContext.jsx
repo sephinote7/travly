@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }) => {
       password: password.trim(),
       options: {
         user_metadata: { nickname: nickname.trim() },
-        emailRedirectTo: 'http://localhost:5173',
+        emailRedirectTo: 'http://localhost:5174',
       },
     });
 
