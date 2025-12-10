@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthStateContext.jsx';
+import supabase from '../util/supabaseClient.js';
+import kakaoIcon from './images/kakao.png';
 
 function LoginComp({ open, onClose, onLoginSuccess }) {
   const navigate = useNavigate();
@@ -38,6 +40,34 @@ function LoginComp({ open, onClose, onLoginSuccess }) {
     if (e.key === 'Enter') handleLogin();
   };
 
+  // ✅ 카카오 로그인
+  const handleKakaoLogin = async () => {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'kakao',
+        options: {
+          redirectTo: `${window.location.origin}/`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+
+      if (error) {
+        console.error('카카오 로그인 에러:', error);
+        alert('카카오 로그인 중 에러가 발생했습니다: ' + error.message);
+        return;
+      }
+
+      // OAuth 리디렉션이 자동으로 일어나므로 추가 동작 불필요
+      // AuthStateContext의 onAuthStateChange가 세션 변경을 감지하여 자동으로 로그인 처리
+    } catch (err) {
+      console.error('카카오 로그인 예외:', err);
+      alert('카카오 로그인 중 오류가 발생했습니다. 다시 시도해주세요.');
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center">
       {/* 배경 딤 */}
@@ -48,7 +78,7 @@ function LoginComp({ open, onClose, onLoginSuccess }) {
         className="relative z-50 bg-white rounded-[24px] shadow-xl flex flex-col items-center"
         style={{ width: '800px', height: '500px' }}
       >
-        <div className="w-full h-full px-10 pt-8 pb-8 flex flex-col items-center">
+        <div className="w-full h-full px-10 pt-6 pb-8 flex flex-col items-center">
           {/* 닫기 버튼 */}
           <button
             type="button"
@@ -63,7 +93,7 @@ function LoginComp({ open, onClose, onLoginSuccess }) {
             <h2 className="font-semibold mb-1" style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: '24px' }}>
               로그인
             </h2>
-            <p className="text-slate-500 mb-6" style={{ fontSize: '14px' }}>
+            <p className="text-slate-500 mb-4" style={{ fontSize: '14px' }}>
               Travly에 로그인하고 여행 기록을 저장하세요.
             </p>
           </div>
@@ -137,7 +167,7 @@ function LoginComp({ open, onClose, onLoginSuccess }) {
           </div>
 
           {/* 이메일 저장 체크박스 */}
-          <div className="mt-4 w-full flex justify-center">
+          <div className="mt-3 w-full flex justify-center">
             <div className="flex items-center gap-2" style={{ width: '100%', maxWidth: '680px' }}>
               <button
                 type="button"
@@ -162,8 +192,30 @@ function LoginComp({ open, onClose, onLoginSuccess }) {
             </div>
           </div>
 
+          {/* 카카오 로그인 버튼 */}
+          <div className="mt-3 w-full flex justify-center">
+            <button
+              type="button"
+              onClick={handleKakaoLogin}
+              className="flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white hover:bg-slate-50 transition-colors"
+              style={{ width: '260px', height: '36px' }}
+            >
+              <div
+                className="flex items-center justify-center rounded-full overflow-hidden"
+                style={{
+                  width: '22px',
+                  height: '22px',
+                  backgroundColor: '#FEE500',
+                }}
+              >
+                <img src={kakaoIcon} alt="카카오" className="w-[18px] h-[18px] object-contain" />
+              </div>
+              <span className="text-[13px] text-slate-900">카카오톡으로 로그인</span>
+            </button>
+          </div>
+
           {/* 하단 텍스트들 */}
-          <div className="mt-6 flex flex-col items-center justify-center text-center" style={{ fontSize: '16px' }}>
+          <div className="mt-4 flex flex-col items-center justify-center text-center" style={{ fontSize: '16px' }}>
             <p className="text-slate-700">
               비밀번호를 잊으셨나요?{' '}
               <button type="button" className="text-[#2D7FEA] hover:underline">

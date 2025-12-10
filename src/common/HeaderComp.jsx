@@ -60,8 +60,9 @@ function HeaderComp() {
           </Link>
         </li>
         {/* 사람 아이콘 */}
-        <li className="cursor-pointer" onClick={handleUserClick}>
+        <li className="cursor-pointer relative" onClick={handleUserClick}>
           <img src={utilUser} alt="사용자" />
+          {isUserCompOpen && <SideProfileComp />}
         </li>
         {/* 알림 종 아이콘 */}
         <li className="cursor-pointer relative" onClick={toggleNotice}>
@@ -72,7 +73,6 @@ function HeaderComp() {
           {isNoticeOpen && <NoticeComp />}
         </li>
       </ul>
-      {isUserCompOpen && <SideProfileComp />}
     </div>
   );
 }

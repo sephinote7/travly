@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import kakaoIcon from '../../common/images/kakao.png';
 import travlyLogo from '../../common/images/logo2.png';
 import { useAuth } from '../../common/AuthStateContext.jsx';
-import supabase from '../../common/../util/supabaseClient.js'; // 실제 경로 맞춰서 수정
+import supabase from '../../util/supabaseClient.js';
 
 function SignupComp() {
   const navigate = useNavigate();
@@ -107,28 +107,38 @@ function SignupComp() {
 
   // ✅ 카카오 로그인/회원가입 (SignupComp에서 직접 호출)
   const handleKakaoSignup = async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'kakao',
-      options: {
-        redirectTo: `${window.location.origin}/`,
-      },
-    });
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'kakao',
+        options: {
+          redirectTo: `${window.location.origin}/`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
 
-    if (error) {
-      console.error('카카오 로그인 에러:', error.message);
-      alert('카카오 로그인 중 에러가 발생했습니다: ' + error.message);
-      return;
+      if (error) {
+        console.error('카카오 로그인 에러:', error);
+        alert('카카오 로그인 중 에러가 발생했습니다: ' + error.message);
+        return;
+      }
+
+      // OAuth 리디렉션이 자동으로 일어나므로 추가 동작 불필요
+      // AuthStateContext의 onAuthStateChange가 세션 변경을 감지하여 자동으로 로그인 처리
+    } catch (err) {
+      console.error('카카오 로그인 예외:', err);
+      alert('카카오 로그인 중 오류가 발생했습니다. 다시 시도해주세요.');
     }
-
-    // data.url로 리디렉션이 일어나기 때문에 여기서 추가 동작은 거의 필요 없음
   };
 
   return (
     <div className="w-full flex justify-center bg-slate-100 py-16">
       {/* 540 x 700 프레임 2개를 붙인 전체 래퍼 */}
       <div
-        className="flex shadow-[0_18px_40px_rgba(15,23,42,0.18)] overflow-hidden"
-        style={{ width: '1080px', height: '700px' }}
+        className="flex shadow-[0_18px_40px_rgba(15,23,42,0.18)] overflow-hidden rounded-[50px]"
+        style={{ width: '1080px', height: '700px', backgroundColor: '#2D7FEA' }}
       >
         {/* 왼쪽 프레임 */}
         <div
@@ -136,8 +146,6 @@ function SignupComp() {
           style={{
             width: '540px',
             height: '700px',
-            borderTopLeftRadius: '50px',
-            borderBottomLeftRadius: '50px',
           }}
         >
           <h4 className="text-white mb-6" style={{ fontSize: '20px', fontWeight: 600 }}>
@@ -256,7 +264,7 @@ function SignupComp() {
                 </label>
                 <div
                   className="rounded-md border border-slate-300 px-3 flex items-center"
-                  style={{ width: '75%', height: '31px' }}
+                  style={{ width: '100%', height: '31px' }}
                 >
                   <input
                     id="password"
@@ -277,7 +285,7 @@ function SignupComp() {
                 </label>
                 <div
                   className="rounded-md border border-slate-300 px-3 flex items-center"
-                  style={{ width: '75%', height: '31px' }}
+                  style={{ width: '100%', height: '31px' }}
                 >
                   <input
                     id="passwordCheck"
@@ -319,7 +327,7 @@ function SignupComp() {
                 style={{ width: '260px', height: '36px' }}
               >
                 <div
-                  className="flex items	center justify-center rounded-full overflow-hidden"
+                  className="flex items-center justify-center rounded-full overflow-hidden"
                   style={{
                     width: '22px',
                     height: '22px',
