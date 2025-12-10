@@ -168,29 +168,43 @@ function PlannerMap({ mode = 'write', initialData }) {
   // ============================================
   // 6. 렌더링
   // ============================================
+  useEffect(() => {
+    if (mode !== 'edit') return;
+    if (!initialData) return;
+    if (!planner || !planner.setSelectedPlaces) return;
 
-  // useEffect(() => {
-  //   if (mode === 'edit' && initialData) {
-  //     setTripTitle(initialData.tripTitle);
+    // tripMeta도 같이 세팅 (있으면)
+    if (initialData.tripMeta) {
+      setTripMeta(initialData.tripMeta);
+    }
 
-  //     const restored = initialData.items.map((item, idx) => ({
-  //       id: item.placeId,
-  //       routeId: `${item.placeId}-${Date.now()}-${Math.random().toString(16)}`,
-  //       order: item.order,
-  //       name: item.name,
-  //       addr: item.addr,
-  //       lat: item.lat,
-  //       lng: item.lng,
-  //       photos: item.photos,
-  //       title: item.title,
-  //       text: item.text,
-  //       source: 'db',
-  //     }));
+    // initialData.items -> selectedPlaces 형태로 변환
+    const restored = (initialData.items || []).map((item, idx) => ({
+      id: item.placeId, // DB placeId
+      routeId: `${item.placeId}-${idx}`, // 수정 모드에서도 고정된 routeId
+      order: item.order ?? idx + 1,
+      name: item.name,
+      addr: item.addr,
+      lat: item.lat,
+      lng: item.lng,
+      photos: item.photos || [],
+      title: item.title || '',
+      text: item.text || '',
+      source: 'db', // DB에서 온 데이터라는 표시
+    }));
 
-  //     planner.setSelectedPlaces(restored);
-  //   }
-  // }, [mode, initialData]);
+    planner.setSelectedPlaces(restored);
 
+    // 중심 좌표가 있으면 지도도 그쪽으로 이동
+    if (mapRef.current && window.kakao && initialData.center) {
+      const { kakao } = window;
+      const pos = new kakao.maps.LatLng(
+        initialData.center.lat,
+        initialData.center.lng
+      );
+      mapRef.current.setCenter(pos);
+    }
+  }, [mode, initialData, planner, mapRef]);
   return (
     <div className="planner-container">
       {/* 🔥 여행 카테고리 모달 (처음에만 보이고, 다음으로 누르면 사라짐) */}
@@ -272,6 +286,8 @@ function PlannerMap({ mode = 'write', initialData }) {
               setExpandedRouteId(null); // 펼쳐진 카드도 초기화
             }}
             tripMeta={tripMeta}
+            mode={mode === 'edit' ? 'edit' : 'create'}
+            boardId={initialData?.boardId}
           />
         </div>
       </div>

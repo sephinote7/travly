@@ -5,7 +5,7 @@ import { recalcSegmentDistances } from '../utils/distanceUtils';
 /* =========================================
  *  번호 마커(1,2,3...) CustomOverlay 생성 함수
  * =======================================*/
-function createNumberMarker(map, position, number) {
+function createNumberMarker(position, number) {
   const content = `<div class="route-marker">${number}</div>`;
 
   return new window.kakao.maps.CustomOverlay({
