@@ -32,15 +32,15 @@ function SideProfileComp() {
         </div>
 
         <ul className="flex flex-col gap-5">
-          <Link to="/memberinfo">
+          <Link to="/memberinfo" onClick={closeUserComp}>
             <li className="p">나의 여행 공간</li>
           </Link>
 
-          <Link>
+          <Link to="/board/list?type=my" onClick={closeUserComp}>
             <li className="p">내가 남긴 여행 기록</li>
           </Link>
 
-          <Link>
+          <Link to="/board/list?type=bookmark" onClick={closeUserComp}>
             <li className="p">내가 저장한 여행</li>
           </Link>
           <li className=" text-red-600 cursor-pointer" onClick={handleLogout}>

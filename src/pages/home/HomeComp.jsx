@@ -13,15 +13,7 @@ import { useAuth } from '../../common/AuthStateContext.jsx';
 
 function HomeComp() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const {
-    isLoginModalOpen,
-    openLoginModal,
-    closeLoginModal,
-    isUserCompOpen,
-    closeUserComp,
-    userData,
-    isProcessingOAuth,
-  } = useAuth();
+  const { isLoginModalOpen, openLoginModal, closeLoginModal, isUserCompOpen, closeUserComp, userData } = useAuth();
 
   // URL 쿼리 파라미터로 로그인 모달 열기 (OAuth 리디렉션이 아닐 때만)
   useEffect(() => {
@@ -31,13 +23,13 @@ function HomeComp() {
       window.location.hash.includes('code=') ||
       window.location.search.includes('code=');
 
-    // OAuth 리디렉션이 아니고, OAuth 처리 중이 아니고, 로그인되지 않았고, login=open 파라미터가 있을 때만 모달 열기
-    if (!isOAuthRedirect && !isProcessingOAuth && !userData?.isLoggedIn && loginParam === 'open') {
+    // OAuth 리디렉션이 아니고, 로그인되지 않았고, login=open 파라미터가 있을 때만 모달 열기
+    if (!isOAuthRedirect && !userData?.isLoggedIn && loginParam === 'open') {
       openLoginModal();
       // 쿼리 파라미터 제거
       setSearchParams({});
     }
-  }, [searchParams, userData, isProcessingOAuth, openLoginModal, setSearchParams]);
+  }, [searchParams, userData, openLoginModal, setSearchParams]);
 
   return (
     <div className="home-page">
