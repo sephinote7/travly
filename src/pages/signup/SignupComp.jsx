@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import kakaoIcon from '../../common/images/kakao.png';
 import travlyLogo from '../../common/images/logo2.png';
 import { useAuth } from '../../common/AuthStateContext.jsx';
-import supabase from '../../util/supabaseClient.js';
+import { supabase } from '../../util/supabaseClient.js';
 
 function SignupComp() {
   const navigate = useNavigate();
@@ -38,7 +38,12 @@ function SignupComp() {
 
   // ✅ Supabase 이메일 회원가입
   const handleSignup = async () => {
-    if (!form.email || !form.nickname || !form.password || !form.passwordCheck) {
+    if (
+      !form.email ||
+      !form.nickname ||
+      !form.password ||
+      !form.passwordCheck
+    ) {
       alert('모든 필드를 입력해 주세요.');
       return;
     }
@@ -73,7 +78,9 @@ function SignupComp() {
       return;
     }
 
-    const isUsed = usedEmails.some((e) => e.toLowerCase() === value.toLowerCase());
+    const isUsed = usedEmails.some(
+      (e) => e.toLowerCase() === value.toLowerCase()
+    );
 
     if (isUsed) {
       setEmailStatus('error');
@@ -94,7 +101,9 @@ function SignupComp() {
       return;
     }
 
-    const isUsed = usedNicknames.some((n) => n.toLowerCase() === value.toLowerCase());
+    const isUsed = usedNicknames.some(
+      (n) => n.toLowerCase() === value.toLowerCase()
+    );
 
     if (isUsed) {
       setNicknameStatus('error');
@@ -148,7 +157,10 @@ function SignupComp() {
             height: '700px',
           }}
         >
-          <h4 className="text-white mb-6" style={{ fontSize: '20px', fontWeight: 600 }}>
+          <h4
+            className="text-white mb-6"
+            style={{ fontSize: '20px', fontWeight: 600 }}
+          >
             Travly에 오신 것을 환영합니다!
           </h4>
 
@@ -156,7 +168,11 @@ function SignupComp() {
             className="bg-white flex items-center justify-center"
             style={{ width: '260px', height: '260px', borderRadius: '40px' }}
           >
-            <img src={travlyLogo} alt="Travly 로고" className="w-[200px] h-auto object-contain" />
+            <img
+              src={travlyLogo}
+              alt="Travly 로고"
+              className="w-[200px] h-auto object-contain"
+            />
           </div>
         </div>
 
@@ -171,7 +187,10 @@ function SignupComp() {
           }}
         >
           <div className="w-full h-full px-10 pt-10 pb-8 flex flex-col items-center">
-            <h2 className="text-center font-semibold mb-6" style={{ fontSize: '24px', color: '#ff7a00' }}>
+            <h2
+              className="text-center font-semibold mb-6"
+              style={{ fontSize: '24px', color: '#ff7a00' }}
+            >
               회원 가입
             </h2>
 
@@ -179,7 +198,11 @@ function SignupComp() {
             <div className="flex flex-col gap-4" style={{ width: '320px' }}>
               {/* 이메일 */}
               <div>
-                <label htmlFor="email" className="block mb-1 text-slate-800" style={{ fontSize: '14px' }}>
+                <label
+                  htmlFor="email"
+                  className="block mb-1 text-slate-800"
+                  style={{ fontSize: '14px' }}
+                >
                   이메일
                 </label>
                 <div className="flex gap-2">
@@ -211,7 +234,13 @@ function SignupComp() {
                   </button>
                 </div>
                 {emailMessage && (
-                  <p className={`mt-1 text-xs ${emailStatus === 'ok' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                  <p
+                    className={`mt-1 text-xs ${
+                      emailStatus === 'ok'
+                        ? 'text-emerald-500'
+                        : 'text-rose-500'
+                    }`}
+                  >
                     {emailMessage}
                   </p>
                 )}
@@ -219,7 +248,11 @@ function SignupComp() {
 
               {/* 닉네임 */}
               <div>
-                <label htmlFor="nickname" className="block mb-1 text-slate-800" style={{ fontSize: '14px' }}>
+                <label
+                  htmlFor="nickname"
+                  className="block mb-1 text-slate-800"
+                  style={{ fontSize: '14px' }}
+                >
                   닉네임
                 </label>
                 <div className="flex gap-2">
@@ -251,7 +284,13 @@ function SignupComp() {
                   </button>
                 </div>
                 {nicknameMessage && (
-                  <p className={`mt-1 text-xs ${nicknameStatus === 'ok' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                  <p
+                    className={`mt-1 text-xs ${
+                      nicknameStatus === 'ok'
+                        ? 'text-emerald-500'
+                        : 'text-rose-500'
+                    }`}
+                  >
                     {nicknameMessage}
                   </p>
                 )}
@@ -259,7 +298,11 @@ function SignupComp() {
 
               {/* 비밀번호 */}
               <div>
-                <label htmlFor="password" className="block mb-1 text-slate-800" style={{ fontSize: '14px' }}>
+                <label
+                  htmlFor="password"
+                  className="block mb-1 text-slate-800"
+                  style={{ fontSize: '14px' }}
+                >
                   비밀번호
                 </label>
                 <div
@@ -280,7 +323,11 @@ function SignupComp() {
 
               {/* 비밀번호 확인 */}
               <div>
-                <label htmlFor="passwordCheck" className="block mb-1 text-slate-800" style={{ fontSize: '14px' }}>
+                <label
+                  htmlFor="passwordCheck"
+                  className="block mb-1 text-slate-800"
+                  style={{ fontSize: '14px' }}
+                >
                   비밀번호 확인
                 </label>
                 <div
@@ -334,16 +381,26 @@ function SignupComp() {
                     backgroundColor: '#FEE500',
                   }}
                 >
-                  <img src={kakaoIcon} alt="카카오" className="w-[18px] h-[18px] object-contain" />
+                  <img
+                    src={kakaoIcon}
+                    alt="카카오"
+                    className="w-[18px] h-[18px] object-contain"
+                  />
                 </div>
-                <span className="text-[13px] text-slate-900">카카오톡으로 회원가입</span>
+                <span className="text-[13px] text-slate-900">
+                  카카오톡으로 회원가입
+                </span>
               </button>
             </div>
 
             {/* 하단: 이미 회원이신가요? 로그인 하기 */}
             <div className="mt-auto text-center" style={{ fontSize: '13px' }}>
               <span className="text-slate-500">이미 회원이신가요? </span>
-              <button type="button" onClick={goLogin} className="text-[#ff7a00] hover:underline">
+              <button
+                type="button"
+                onClick={goLogin}
+                className="text-[#ff7a00] hover:underline"
+              >
                 로그인 하기
               </button>
             </div>

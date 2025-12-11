@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthStateContext.jsx';
-import supabase from '../util/supabaseClient.js';
+import { supabase } from '../util/supabaseClient.js';
 import kakaoIcon from './images/kakao.png';
 
 function LoginComp({ open, onClose, onLoginSuccess }) {
@@ -28,7 +28,9 @@ function LoginComp({ open, onClose, onLoginSuccess }) {
     const result = await login({ email, password }); // ✅ Supabase 로그인 시도
 
     if (!result.success) {
-      setErrorMsg(result.error?.message ?? '이메일 또는 비밀번호를 확인해 주세요.');
+      setErrorMsg(
+        result.error?.message ?? '이메일 또는 비밀번호를 확인해 주세요.'
+      );
       return;
     }
 
@@ -90,7 +92,13 @@ function LoginComp({ open, onClose, onLoginSuccess }) {
 
           {/* 제목 영역: 왼쪽 정렬 */}
           <div className="w-full max-w-[680px] self-start">
-            <h2 className="font-semibold mb-1" style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: '24px' }}>
+            <h2
+              className="font-semibold mb-1"
+              style={{
+                fontFamily: 'Inter, system-ui, sans-serif',
+                fontSize: '24px',
+              }}
+            >
               로그인
             </h2>
             <p className="text-slate-500 mb-4" style={{ fontSize: '14px' }}>
@@ -103,7 +111,11 @@ function LoginComp({ open, onClose, onLoginSuccess }) {
             <div className="w-full max-w-[680px]">
               {/* 이메일 */}
               <div className="mb-3">
-                <label htmlFor="login-email" className="block mb-1 text-slate-800" style={{ fontSize: '16px' }}>
+                <label
+                  htmlFor="login-email"
+                  className="block mb-1 text-slate-800"
+                  style={{ fontSize: '16px' }}
+                >
                   이메일
                 </label>
                 <div
@@ -125,7 +137,11 @@ function LoginComp({ open, onClose, onLoginSuccess }) {
 
               {/* 비밀번호 */}
               <div>
-                <label htmlFor="login-password" className="block mb-1 text-slate-800" style={{ fontSize: '16px' }}>
+                <label
+                  htmlFor="login-password"
+                  className="block mb-1 text-slate-800"
+                  style={{ fontSize: '16px' }}
+                >
                   비밀번호
                 </label>
                 <div
@@ -146,7 +162,9 @@ function LoginComp({ open, onClose, onLoginSuccess }) {
               </div>
 
               {/* 에러 메시지 */}
-              {errorMsg && <p className="mt-2 text-sm text-red-500">{errorMsg}</p>}
+              {errorMsg && (
+                <p className="mt-2 text-sm text-red-500">{errorMsg}</p>
+              )}
 
               {/* 로그인 버튼 */}
               <button
@@ -168,7 +186,10 @@ function LoginComp({ open, onClose, onLoginSuccess }) {
 
           {/* 이메일 저장 체크박스 */}
           <div className="mt-3 w-full flex justify-center">
-            <div className="flex items-center gap-2" style={{ width: '100%', maxWidth: '680px' }}>
+            <div
+              className="flex items-center gap-2"
+              style={{ width: '100%', maxWidth: '680px' }}
+            >
               <button
                 type="button"
                 onClick={() => setSaveEmail((v) => !v)}
@@ -180,7 +201,10 @@ function LoginComp({ open, onClose, onLoginSuccess }) {
                     className="w-full h-full flex items-center justify-center"
                     style={{ backgroundColor: '#2D7FEA', borderRadius: '6px' }}
                   >
-                    <span className="text-white" style={{ fontSize: '11px', lineHeight: 1 }}>
+                    <span
+                      className="text-white"
+                      style={{ fontSize: '11px', lineHeight: 1 }}
+                    >
                       ✓
                     </span>
                   </div>
@@ -208,14 +232,23 @@ function LoginComp({ open, onClose, onLoginSuccess }) {
                   backgroundColor: '#FEE500',
                 }}
               >
-                <img src={kakaoIcon} alt="카카오" className="w-[18px] h-[18px] object-contain" />
+                <img
+                  src={kakaoIcon}
+                  alt="카카오"
+                  className="w-[18px] h-[18px] object-contain"
+                />
               </div>
-              <span className="text-[13px] text-slate-900">카카오톡으로 로그인</span>
+              <span className="text-[13px] text-slate-900">
+                카카오톡으로 로그인
+              </span>
             </button>
           </div>
 
           {/* 하단 텍스트들 */}
-          <div className="mt-4 flex flex-col items-center justify-center text-center" style={{ fontSize: '16px' }}>
+          <div
+            className="mt-4 flex flex-col items-center justify-center text-center"
+            style={{ fontSize: '16px' }}
+          >
             <p className="text-slate-700">
               비밀번호를 잊으셨나요?{' '}
               <button type="button" className="text-[#2D7FEA] hover:underline">
@@ -225,7 +258,11 @@ function LoginComp({ open, onClose, onLoginSuccess }) {
             <p className="text-slate-900 mt-1">
               <span className="text-[#2D7FEA]">계정</span>
               <span>이 없으신가요? </span>
-              <button type="button" onClick={goSignup} className="text-[#2D7FEA] hover:underline">
+              <button
+                type="button"
+                onClick={goSignup}
+                className="text-[#2D7FEA] hover:underline"
+              >
                 [회원 가입 하러가기]
               </button>
             </p>

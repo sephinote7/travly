@@ -16,7 +16,8 @@ function HeaderComp() {
   const [isNoticeOpen, setIsNoticeOpen] = useState(false);
   const [hasNewNotice, setHasNewNotice] = useState(true);
 
-  const { userData, toggleUserComp, openLoginModal, isUserCompOpen } = useAuth();
+  const { userData, toggleUserComp, openLoginModal, isUserCompOpen } =
+    useAuth();
 
   // 사람 아이콘 클릭 시: 로그인 여부에 따라 동작 분기
   const handleUserClick = () => {
@@ -62,7 +63,6 @@ function HeaderComp() {
         {/* 사람 아이콘 */}
         <li className="cursor-pointer relative" onClick={handleUserClick}>
           <img src={utilUser} alt="사용자" />
-          {isUserCompOpen && <SideProfileComp />}
         </li>
         {/* 알림 종 아이콘 */}
         <li className="cursor-pointer relative" onClick={toggleNotice}>

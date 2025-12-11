@@ -1,7 +1,6 @@
-
 // src/common/AuthStateContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import supabase from '../util/supabaseClient.js';
+import { supabase } from '../util/supabaseClient.js';
 
 const AuthContext = createContext(null);
 
@@ -49,7 +48,10 @@ export const AuthProvider = ({ children }) => {
       if (session) {
         setUserData({
           isLoggedIn: true,
-          name: session.user.user_metadata?.nickname ?? session.user.user_metadata?.full_name ?? null,
+          name:
+            session.user.user_metadata?.nickname ??
+            session.user.user_metadata?.full_name ??
+            null,
           email: session.user.email,
         });
 
@@ -72,39 +74,44 @@ export const AuthProvider = ({ children }) => {
     checkSession();
 
     // 세션 변경(OAuth 리디렉션 포함) 실시간 반영
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      // 초기 세션 체크가 완료될 때까지 기다림
-      if (!initialSessionChecked) {
-        return;
-      }
-
-      if (session) {
-        const isOAuthRedirect = checkOAuthRedirect();
-
-        setUserData({
-          isLoggedIn: true,
-          name: session.user.user_metadata?.nickname ?? session.user.user_metadata?.full_name ?? null,
-          email: session.user.email,
-        });
-
-        // OAuth 리디렉션이거나 새로 로그인된 경우 프로필 모달 자동 오픈
-        if (isOAuthRedirect || event === 'SIGNED_IN') {
-          setIsUserCompOpen(true);
-          setIsLoginModalOpen(false); // 로그인 모달 닫기
-
-          // URL 정리 (해시 및 쿼리 파라미터 제거)
-          if (isOAuthRedirect) {
-            setTimeout(() => {
-              const cleanUrl = window.location.pathname;
-              window.history.replaceState(null, '', cleanUrl);
-            }, 100);
-          }
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        // 초기 세션 체크가 완료될 때까지 기다림
+        if (!initialSessionChecked) {
+          return;
         }
-      } else {
-        setUserData({ isLoggedIn: false, name: null, email: null });
-        setIsUserCompOpen(false);
+
+        if (session) {
+          const isOAuthRedirect = checkOAuthRedirect();
+
+          setUserData({
+            isLoggedIn: true,
+            name:
+              session.user.user_metadata?.nickname ??
+              session.user.user_metadata?.full_name ??
+              null,
+            email: session.user.email,
+          });
+
+          // OAuth 리디렉션이거나 새로 로그인된 경우 프로필 모달 자동 오픈
+          if (isOAuthRedirect || event === 'SIGNED_IN') {
+            setIsUserCompOpen(true);
+            setIsLoginModalOpen(false); // 로그인 모달 닫기
+
+            // URL 정리 (해시 및 쿼리 파라미터 제거)
+            if (isOAuthRedirect) {
+              setTimeout(() => {
+                const cleanUrl = window.location.pathname;
+                window.history.replaceState(null, '', cleanUrl);
+              }, 100);
+            }
+          }
+        } else {
+          setUserData({ isLoggedIn: false, name: null, email: null });
+          setIsUserCompOpen(false);
+        }
       }
-    });
+    );
 
     return () => {
       authListener?.subscription?.unsubscribe();

@@ -24,7 +24,7 @@ const MainLayout = () => {
       {/* ========================================================== */}
       {/* ⭐️ 유저 컴포넌트 조건부 렌더링 (Context 상태 사용) */}
       {isUserCompOpen && (
-        <div className="absolute right-0 top-[80px] z-50">
+        <div className="absolute right-0 top-[72px] z-50">
           {userData.isLoggedIn ? (
             // 로그인 상태: SideProfileComp 렌더링
             // SideProfileComp는 Context에서 유저 정보와 로그아웃 함수를 가져옵니다.

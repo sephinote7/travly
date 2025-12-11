@@ -13,7 +13,6 @@ import { AuthProvider } from './common/AuthStateContext';
 function App() {
   return (
     <>
-<<<<<<< HEAD
       <Routes>
         {/* 전체 레이아웃 적용 */}
         <Route path="/" element={<Layout />}>
@@ -27,23 +26,6 @@ function App() {
           <Route path="memberinfo/modify" element={<MemberInfoModify />} />
         </Route>
       </Routes>
-=======
-      <AuthProvider>
-        <Routes>
-          {/* 전체 레이아웃 적용 */}
-          <Route path="/" element={<LayoutComp />}>
-            {/* 1. Board 관련 모든 라우트를 한 줄로 통합 */}
-            {BoardRoutes}
-            {/* 2. 나머지 라우트 (최상위 및 기타) */}
-            {HomeRoutes}
-            {QnaRoutes}
-            <Route path="signup" element={<SignupComp />} />
-            <Route path="memberinfo" element={<MemberInfoComp />} />
-            <Route path="memberinfo/modify" element={<MemberInfoModify />} />
-          </Route>
-        </Routes>
-      </AuthProvider>
->>>>>>> feat/member-kang
     </>
   );
 }
