@@ -1,13 +1,19 @@
 import { Link } from 'react-router-dom';
+import qnaImage from '../../common/images/QnA.png';
 
 // src/components/QnaVisual.jsx
 export default function QnaVisual() {
   return (
     <section
-      className="w-full bg-purple-200 h-[600px] bg-cover bg-center flex items-center"
-      style={{ backgroundImage: `url('/images/qna_bg.jpg')` }}
+      className="w-full h-[400px] md:h-[500px] bg-cover bg-center flex items-center relative overflow-hidden"
+      style={{
+        backgroundImage: `url(${qnaImage})`,
+        backgroundSize: 'contain',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
     >
-      <div className="max-w-[1080px] mx-auto px-4 text-white">
+      <div className="max-w-[1080px] mx-auto px-4 text-white relative z-10">
         <h3 className="text-xl mb-3">
           궁금한 점이 있으신가요? 언제든지 <span className="text-blue-400">Travly</span>에 물어보세요!
         </h3>
