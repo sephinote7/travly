@@ -61,110 +61,6 @@
   object-fit: cover;
 }
 
-<<<<<<< HEAD
-.bv-writer-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.bv-writer-name {
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.bv-writer-meta {
-  font-size: 11px;
-  color: #6b7280;
-}
-
-/* 2. 지도 박스 */
-.bv-map-canvas {
-  width: 100%;
-  height: 320px;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-/* 3. 썸네일 박스 */
-.bv-thumbs {
-  padding: 12px 16px;
-}
-
-/* 4. 코스 상세 박스 */
-.bv-place-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
-}
-
-.bv-place-title {
-  font-size: 18px;
-  font-weight: 600;
-  margin: 0 0 4px;
-}
-
-.bv-place-addr {
-  margin: 0;
-  font-size: 12px;
-  color: #6b7280;
-}
-
-.bv-place-meta {
-  text-align: right;
-  font-size: 11px;
-  color: #6b7280;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.bv-place-body {
-  display: grid;
-  grid-template-columns: 1.3fr 1fr;
-  gap: 16px;
-}
-
-.bv-place-photos {
-  min-height: 180px;
-}
-
-.bv-place-text h3 {
-  margin: 0 0 6px;
-  font-size: 14px;
-}
-
-.bv-place-text p {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-/* 5. 댓글 박스 */
-.bv-comments-title {
-  margin: 0 0 12px;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.bv-comment-form {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.bv-comment-form textarea {
-  min-height: 80px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid #d1d5db;
-}
-
-.bv-comment-form button {
-  align-self: flex-end;
-  padding: 6px 14px;
-=======
 /* 메인 컨텐츠 공통 */
 .view-main {
   max-width: 960px;
@@ -478,39 +374,10 @@
   padding: 6px 16px;
   font-size: 13px;
   font-weight: 600;
->>>>>>> feat/index_gil
   border-radius: 6px;
   border: none;
   background-color: #2563eb;
   color: #ffffff;
-<<<<<<< HEAD
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.bv-comment-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.bv-comment-item + .bv-comment-item {
-  margin-top: 10px;
-  border-top: 1px solid #e5e7eb;
-  padding-top: 8px;
-}
-
-.bv-comment-header {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  margin-bottom: 4px;
-}
-
-.bv-comment-text {
-  margin: 0;
-  font-size: 13px;
-=======
   cursor: pointer;
   transition: background-color 0.15s ease;
 }
@@ -567,5 +434,4 @@
 .view-comment-content {
   font-size: 13px;
   color: #374151;
->>>>>>> feat/index_gil
 }
