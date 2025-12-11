@@ -58,9 +58,7 @@ function FooterComp() {
             </div>
           </div>
         </div>
-        <p className="text-sm text-center">
-          © 2025. Travly All Rights Reserved.
-        </p>
+        <p className="text-sm text-center">© 2025. Travly All Rights Reserved.</p>
       </div>
     </div>
   );

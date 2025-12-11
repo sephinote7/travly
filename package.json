@@ -10,15 +10,24 @@
     "preview": "vite preview"
   },
   "dependencies": {
+<<<<<<< HEAD
     "@supabase/supabase-js": "^2.86.2",
+=======
+    "@supabase/supabase-js": "^2.87.0",
+>>>>>>> feat/member-kang
     "@tailwindcss/vite": "^4.1.17",
     "@types/react-router-dom": "^5.3.3",
     "axios": "^1.13.2",
     "dayjs": "^1.11.19",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-icons": "^5.5.0",
     "react-router-dom": "^7.9.6",
+<<<<<<< HEAD
     "swiper": "^11.2.10",
+=======
+    "swiper": "^12.0.3",
+>>>>>>> feat/member-kang
     "tailwindcss": "^4.1.17"
   },
   "devDependencies": {

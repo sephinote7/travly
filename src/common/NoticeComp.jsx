@@ -13,8 +13,7 @@ const dummyNotices = [
   {
     id: 2,
     title: '와와와와',
-    content:
-      "칭호 '여행 입문자'를 획득했습니다. ㅁㄴㄹㄴㅇㅁㄹㅇㄴㅁㄹㄴㅇㅁㄹㅇㄴㅁ",
+    content: "칭호 '여행 입문자'를 획득했습니다. ㅁㄴㄹㄴㅇㅁㄹㅇㄴㅁㄹㄴㅇㅁㄹㅇㄴㅁ",
     url: '/#',
   },
   {
@@ -55,20 +54,14 @@ function NoticeComp() {
         <h5 className="font-bold border-b border-neutral-500">새 댓글 알림</h5>
 
         {/* 2. 로딩 상태 표시 */}
-        {isLoading && (
-          <p className="text-gray-500 ctext">알림 불러오는 중...</p>
-        )}
+        {isLoading && <p className="text-gray-500 ctext">알림 불러오는 중...</p>}
 
         {/* 3. 알림 목록 반복 출력 */}
         {!isLoading && (
           <div className="flex flex-col gap-4">
             {notices.length > 0 ? (
               notices.map((notice) => (
-                <Link
-                  to={notice.url}
-                  key={notice.id}
-                  className="block hover:bg-gray-100 p-1 rounded transition-colors"
-                >
+                <Link to={notice.url} key={notice.id} className="block hover:bg-gray-100 p-1 rounded transition-colors">
                   <div className="flex flex-col justify-between gap-2">
                     <p className="font-bold truncate">{notice.title}</p>{' '}
                     <p className="ctext truncate">{notice.content}</p>
