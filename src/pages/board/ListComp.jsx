@@ -4,6 +4,8 @@ import PostListItem from '../board/components/post/PostListItem';
 import Pagination from '../board/components/common/Pagination';
 import apiClient from '../../services/apiClient';
 
+const PAGE_SIZE = 5;
+
 function ListComp() {
   const [page, setPage] = useState(1);
   const [posts, setPosts] = useState([]);
@@ -15,38 +17,38 @@ function ListComp() {
     async function fetchPosts() {
       setLoading(true);
       setError(null);
+
       try {
-        // 백엔드에서 게시글 목록 가져오기
-        // 예시: GET /board?page=0 이런 구조라고 가정
-        const res = await apiClient.get('/board?page=1&size=10', {
-          params: { page: page - 1 }, // 스프링 페이지 기본 0부터 시작한다고 가정
+        // ⭐ 스펙대로: GET /board?size=5&page={page-1} + body { itemIds: [] }
+        const res = await apiClient.get('/board', {
+          params: {
+            size: PAGE_SIZE,
+            page: page - 1,
+          },
         });
 
-        // 1) res.data 가 배열인 경우  : [ {id, title, created_at, ...}, ... ]
-        // 2) res.data 가 Page 객체인 경우: { content: [...], totalPages: 3, ... }
-        const rawList = Array.isArray(res.data) ? res.data : res.data.content;
+        const data = res.data;
+        const rawList = data.content || [];
 
-        // PostListItem에서 쓰기 좋은 형태로 매핑
         const mapped = rawList.map((b) => ({
           postId: b.id,
           title: b.title,
-          nickname: b.nickname || b.memberNickname || '익명',
-          createdAt: b.createdAt || b.created_at,
+          placeTitle: b.placeTitle,
+          thumbnailFileId: b.placeFileId,
+          updatedAt: b.updatedAt,
+          nickname: b.memberNickname,
+          likeCount: b.likeCount,
+          filterItemNames: b.filterItemNames || [],
         }));
 
         setPosts(mapped);
-
-        // 페이지 정보 있으면 사용
-        if (
-          !Array.isArray(res.data) &&
-          typeof res.data.totalPages === 'number'
-        ) {
-          setTotalPages(res.data.totalPages);
-        } else {
-          setTotalPages(1); // 단순 배열이면 일단 1페이지로
-        }
+        setTotalPages(data.totalPages ?? 1);
       } catch (err) {
-        console.error(err);
+        console.error('📛 게시글 목록 불러오기 실패');
+        console.error('status:', err?.response?.status);
+        console.error('data  :', err?.response?.data);
+        console.error('config:', err?.config);
+
         setError('게시글을 불러오는 중 오류가 발생했습니다.');
       } finally {
         setLoading(false);
