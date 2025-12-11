@@ -7,7 +7,7 @@ import QnaRoutes from './Routes/QnaRoutes';
 import SignupComp from './pages/signup/SignupComp';
 import MemberInfoComp from '../src/pages/memberInfo/MemberInfoComp';
 import MemberInfoModify from '../src/pages/memberInfo/MemberInfoModifyComp';
-import BoardRoutes from './Routes/BoardRoutes';
+import { AuthProvider } from './common/AuthStateContext';
 
 /* eslint-disable */
 function App() {
