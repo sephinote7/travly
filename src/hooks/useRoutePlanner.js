@@ -65,7 +65,8 @@ export function useRoutePlanner(mapRef) {
       const pos = new kakao.maps.LatLng(p.lat, p.lng);
       path.push(pos);
 
-      const marker = createNumberMarker(map, pos, idx + 1);
+      // 첫 번째 인자는 position (LatLng), 두 번째는 번호
+      const marker = createNumberMarker(pos, idx + 1);
       marker.setMap(map);
       newMarkers.push(marker);
     });
