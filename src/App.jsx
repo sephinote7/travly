@@ -18,6 +18,8 @@ function App() {
         <Route path="/" element={<Layout />}>
           {/* 1. Board 관련 모든 라우트를 한 줄로 통합 */}
           {BoardRoutes}
+          <Route path="/*" element={<BoardRoutes />} />
+
           {/* 2. 나머지 라우트 (최상위 및 기타) */}
           {HomeRoutes}
           {QnaRoutes}
