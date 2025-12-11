@@ -1,89 +1,161 @@
 // src/pages/board/ViewComp.jsx
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import '../../styles/ViewComp.css';
+import apiClient from '../../services/apiClient';
+import { useKakaoMap } from '../../hooks/useKakaoMap';
+import { redrawMarkersAndPolyline } from '../../utils/mapDrawingUtils';
 
-const mockBoard = {
-  id: 1,
-  title: '알프에서 엑사까지 익산의 오묘 여행코스',
-  placeCount: 6,
-  createdAt: '2025. 12. 10 · 조회 1,234',
-  writer: {
-    profileImageUrl: 'https://via.placeholder.com/40x40.png?text=U',
-    nickname: '여행하는개발자',
-    level: 7,
-  },
-  places: [
-    {
-      id: 101,
-      name: '연천재폭포',
-      addr: '전북 익산시 어디어디 123-4',
-      content: '물소리랑 숲 냄새가 압도적인 구간. 사진 많이 찍는 포인트.',
-      thumbnailUrl: '',
-      photos: [{ url: '' }, { url: '' }, { url: '' }, { url: '' }, { url: '' }],
-    },
-    {
-      id: 102,
-      name: '분홍호수전망대',
-      addr: '전북 익산시 무슨동 56-7',
-      content: '해 질 무렵에 가면 하늘과 호수가 뒤섞여서 최고.',
-      thumbnailUrl: '',
-      photos: [{ url: '' }, { url: '' }, { url: '' }, { url: '' }, { url: '' }],
-    },
-    {
-      id: 103,
-      name: '알프마을 산책로',
-      addr: '전북 익산시 알프구 알프동',
-      content: '잔잔한 산책 코스. 가족 여행에 최적화.',
-      thumbnailUrl: '',
-      photos: [{ url: '' }, { url: '' }, { url: '' }, { url: '' }, { url: '' }],
-    },
-    {
-      id: 104,
-      name: '노을전망 언덕',
-      addr: '전북 익산시 노을동',
-      content: '노을 보는 순간 “아 여기 맞다” 싶은 장소.',
-      thumbnailUrl: '',
-      photos: [{ url: '' }, { url: '' }, { url: '' }, { url: '' }, { url: '' }],
-    },
-    {
-      id: 105,
-      name: '숲속하늘길',
-      addr: '전북 익산시 하늘구 88-1',
-      content: '나무 사이 빛 들어오는 풍경이 예술.',
-      thumbnailUrl: '',
-      photos: [{ url: '' }, { url: '' }, { url: '' }, { url: '' }, { url: '' }],
-    },
-    {
-      id: 106,
-      name: '엑사강변 자전거길',
-      addr: '전북 익산시 강변로 222',
-      content: '여행 마무리로 자전거 타기 좋은 루트.',
-      thumbnailUrl: '',
-      photos: [{ url: '' }, { url: '' }, { url: '' }, { url: '' }, { url: '' }],
-    },
-  ],
-  commentCount: 5,
-  comments: [
-    {
-      id: 1,
-      writerName: '여행초보',
-      createdAt: '2025. 12. 11',
-      content: '코스 너무 좋아보여요!',
-    },
-    {
-      id: 2,
-      writerName: '익산토박이',
-      createdAt: '2025. 12. 11',
-      content: '로컬 식당도 추천해주세요 ㅎㅎ',
-    },
-  ],
-};
+// 🔥 마커 색상들 (원하는 대로 바꿔도 됨)
+const MARKER_COLORS = ['#3b82f6', '#10b981', '#f97316', '#ec4899', '#6366f1'];
 
-function ViewComp({ board: _board }) {
-  const board = _board || mockBoard;
+// 🔧 백엔드 응답(JSON) -> ViewComp에서 쓰기 좋은 형태로 변환
+function mapBoardApiToViewModel(apiBoard) {
+  const createdDate = apiBoard.createdAt ? new Date(apiBoard.createdAt) : null;
 
+  const createdAtStr = createdDate
+    ? `${createdDate.getFullYear()}. ${String(
+        createdDate.getMonth() + 1
+      ).padStart(2, '0')}. ${String(createdDate.getDate()).padStart(2, '0')}`
+    : '';
+
+  const viewCount = apiBoard.viewCount ?? 0;
+
+  // ⭐ 파일 URL 생성 규칙 (서버 규칙에 맞게 수정 가능)
+  const buildFileUrl = (filename) =>
+    `http://localhost:8080/api/travly/file/${filename}`;
+
+  return {
+    id: apiBoard.id,
+    title: apiBoard.title,
+    placeCount: apiBoard.places ? apiBoard.places.length : 0,
+    createdAt: `${createdAtStr} · 조회 ${viewCount}`,
+    writer: {
+      profileImageUrl: apiBoard.member?.profileImage
+        ? buildFileUrl(apiBoard.member.profileImage)
+        : 'https://via.placeholder.com/40x40.png?text=U',
+      nickname: apiBoard.member?.nickname || '알 수 없음',
+      level: 1,
+    },
+    places:
+      apiBoard.places?.map((p) => {
+        const allFiles = p.files || [];
+
+        // ✅ t_ 썸네일 / 원본 사진 분리
+        const thumbFile = allFiles.find((f) =>
+          f.file.filename.startsWith('t_')
+        );
+        const originalFiles = allFiles.filter(
+          (f) => !f.file.filename.startsWith('t_')
+        );
+
+        const photos =
+          originalFiles.map((f) => ({
+            url: buildFileUrl(f.file.filename),
+          })) || [];
+
+        return {
+          id: p.id,
+          name: p.title,
+          addr: '', // 나중에 주소 필드 생기면 매핑
+          content: p.content,
+          thumbnailUrl: thumbFile
+            ? buildFileUrl(thumbFile.file.filename)
+            : photos[0]?.url || '',
+          photos,
+          // ⭐ 지도에서 사용할 좌표
+          x: p.x, // 경도(lng)
+          y: p.y, // 위도(lat)
+        };
+      }) || [],
+    commentCount: apiBoard.commentCount ?? 0,
+    comments: apiBoard.comments ?? [], // 지금은 그냥 그대로 둠
+  };
+}
+
+function ViewComp() {
+  const [board, setBoard] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const selectedPlace = board.places[selectedIndex] || board.places[0];
+
+  // ⭐ 지도용 훅 & ref들
+  const mapRef = useKakaoMap('map'); // #map 요소에 카카오맵 생성
+  const markersRef = useRef([]); // 현재 마커들
+  const polylineRef = useRef(null); // 현재 polyline
+
+  // 1) Board 데이터 불러오기
+  useEffect(() => {
+    async function fetchBoard() {
+      try {
+        // apiClient baseURL이 "http://localhost:8080/api" 라고 가정
+        const res = await apiClient.get('/board/11');
+        const mapped = mapBoardApiToViewModel(res.data);
+        setBoard(mapped);
+      } catch (err) {
+        console.error('board 조회 실패:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchBoard();
+  }, []);
+
+  // 2) Board 데이터 준비되면 지도에 마커 + 이동 경로 그리기
+  useEffect(() => {
+    if (!board) return;
+    if (!board.places || board.places.length === 0) return;
+
+    let cancelled = false;
+    let timeoutId = null;
+
+    const draw = () => {
+      if (cancelled) return;
+
+      // ❗ 지도(ref)나 kakao 가 준비 안 됐으면 100ms 뒤에 재시도
+      if (!mapRef.current || !window.kakao) {
+        timeoutId = setTimeout(draw, 100);
+        return;
+      }
+
+      // ✅ 여기부터는 지도 준비 완료
+      redrawMarkersAndPolyline(
+        mapRef,
+        board.places,
+        markersRef,
+        polylineRef,
+        MARKER_COLORS
+      );
+
+      const first = board.places[0];
+      if (first && first.y != null && first.x != null) {
+        const { kakao } = window;
+        const center = new kakao.maps.LatLng(first.y, first.x);
+        mapRef.current.setCenter(center);
+      }
+    };
+
+    // 처음 한 번 호출
+    draw();
+
+    // cleanup
+    return () => {
+      cancelled = true;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [board, mapRef]);
+
+  if (loading) {
+    return <div className="view-root">로딩 중...</div>;
+  }
+
+  if (!board) {
+    return <div className="view-root">데이터를 불러올 수 없습니다.</div>;
+  }
+
+  const selectedPlace = board.places[selectedIndex] ||
+    board.places[0] || { name: '', addr: '', content: '', photos: [] };
 
   return (
     <div className="view-root">
@@ -92,16 +164,6 @@ function ViewComp({ board: _board }) {
         <div className="view-header-inner">
           <div className="view-logo-wrap">
             <span className="view-logo-text">Travly</span>
-          </div>
-
-          <div className="view-header-right">
-            <button className="view-icon-btn">🔍</button>
-            <button className="view-icon-btn">🔔</button>
-            <img
-              src={board.writer.profileImageUrl}
-              alt="user"
-              className="view-header-avatar"
-            />
           </div>
         </div>
       </header>
@@ -136,9 +198,7 @@ function ViewComp({ board: _board }) {
         {/* 지도 영역 */}
         <section className="view-box">
           <div id="map" className="view-map">
-            <span className="view-map-placeholder">
-              여기에 지도 들어감 (카카오맵)
-            </span>
+            {/* useKakaoMap가 여기 안에 실제 지도를 렌더링함 */}
           </div>
         </section>
 
@@ -149,7 +209,21 @@ function ViewComp({ board: _board }) {
               <button
                 key={place.id}
                 type="button"
-                onClick={() => setSelectedIndex(idx)}
+                onClick={() => {
+                  setSelectedIndex(idx);
+
+                  // 썸네일 클릭 시 지도 중심도 해당 장소로 이동
+                  if (
+                    mapRef.current &&
+                    place.y != null &&
+                    place.x != null &&
+                    window.kakao
+                  ) {
+                    const { kakao } = window;
+                    const pos = new kakao.maps.LatLng(place.y, place.x);
+                    mapRef.current.panTo(pos);
+                  }
+                }}
                 className={
                   'view-thumb-item' +
                   (idx === selectedIndex ? ' view-thumb-item--active' : '')
@@ -190,9 +264,20 @@ function ViewComp({ board: _board }) {
           <div className="view-course-body">
             {/* 왼쪽 사진 영역 */}
             <div className="view-course-photos">
-              {[0, 1, 2].map((idx) => (
-                <div key={idx} className="view-course-photo-item" />
-              ))}
+              {selectedPlace.photos && selectedPlace.photos.length > 0
+                ? selectedPlace.photos.map((photo, idx) => (
+                    <div key={idx} className="view-course-photo-item">
+                      <img
+                        src={photo.url}
+                        alt={`${selectedPlace.name} 사진 ${idx + 1}`}
+                        className="view-course-photo-img"
+                      />
+                    </div>
+                  ))
+                : // 사진 없을 때는 플레이스홀더 3개
+                  [0, 1, 2].map((idx) => (
+                    <div key={idx} className="view-course-photo-item" />
+                  ))}
             </div>
 
             {/* 오른쪽 설명 텍스트 */}
@@ -225,9 +310,13 @@ function ViewComp({ board: _board }) {
             {board.comments.map((c) => (
               <li key={c.id} className="view-comment-item">
                 <div className="view-comment-header">
-                  <div className="view-comment-avatar">{c.writerName[0]}</div>
+                  <div className="view-comment-avatar">
+                    {c.writerName?.[0] || '?'}
+                  </div>
                   <div>
-                    <div className="view-comment-writer">{c.writerName}</div>
+                    <div className="view-comment-writer">
+                      {c.writerName || '익명'}
+                    </div>
                     <div className="view-comment-date">{c.createdAt}</div>
                   </div>
                 </div>

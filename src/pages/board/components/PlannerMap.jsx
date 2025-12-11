@@ -9,6 +9,8 @@ import { fetchTourPlaceDetail } from '../../../services/tourApiService';
 import '../../../styles/PlannerMap.css';
 import TravelCategoryModal from './TravelCategoryModal';
 
+// ⭐ 지도 util: ViewComp와 동일한 마커/경로 그리기 기능
+
 function PlannerMap({ mode = 'write', initialData }) {
   //0. 모달
   const [showIntroModal, setShowIntroModal] = useState(true);
@@ -17,20 +19,17 @@ function PlannerMap({ mode = 'write', initialData }) {
   // ============================================
   // 1. 지도 / 플래너 훅
   // ============================================
-  const mapRef = useKakaoMap('map'); // 카카오 지도 ref
-  const planner = useTripPlanner(mapRef); // 검색 + 경로 상태/핸들러
+  const mapRef = useKakaoMap('map');
+  const planner = useTripPlanner(mapRef);
 
   // ============================================
   // 2. UI 상태
   // ============================================
 
-  // 지도 클릭으로 찍는 임시 마커
-  const clickMarkerRef = useRef(null);
-
   // 타임라인 열림/닫힘
   const [isTimelineOpen, setIsTimelineOpen] = useState(true);
 
-  // 타임라인에서 어떤 카드가 펼쳐져 있는지 (routeId 기준)
+  // 타임라인에서 펼친 routeId
   const [expandedRouteId, setExpandedRouteId] = useState(null);
 
   // 상세 패널 상태
@@ -40,24 +39,19 @@ function PlannerMap({ mode = 'write', initialData }) {
   const [detailError, setDetailError] = useState(null);
 
   // ============================================
-  // 3. 핸들러: 타임라인 / 검색 결과 / 상세 패널
+  // 3. 핸들러들
   // ============================================
 
-  // 타임라인 카드 접기/펼치기
   const handleTimelineToggle = (place) => {
     setExpandedRouteId((prev) =>
       prev === place.routeId ? null : place.routeId
     );
   };
 
-  // 타임라인 사이드바 열기/닫기
   const toggleTimeline = () => {
     setIsTimelineOpen((prev) => !prev);
   };
 
-  // 검색 결과에서 장소 클릭 시:
-  // - activePlace 설정
-  // - 지도 중심 이동
   const handleSearchResultClick = (place) => {
     setActivePlace(place);
 
@@ -68,20 +62,16 @@ function PlannerMap({ mode = 'write', initialData }) {
     }
   };
 
-  // 상세 패널에서 "경로에 추가하기"
   const handleAddToTimeline = () => {
     if (!activePlace) return;
 
-    // 🔥 여기서만 10개 제한 체크
     if (planner.selectedPlaces.length >= 10) {
       alert('여행지는 최대 10개까지만 선택할 수 있어요!');
       return;
     }
-
     planner.handlePlaceSelect(activePlace);
   };
 
-  // 상세 패널 닫기
   const handleCloseDetail = () => {
     setActivePlace(null);
     setActiveDetail(null);
@@ -89,45 +79,9 @@ function PlannerMap({ mode = 'write', initialData }) {
   };
 
   // ============================================
-  // 4. 지도 클릭 시 임시 마커 찍기
+  // 4. TourAPI 상세 정보 불러오기
   // ============================================
   useEffect(() => {
-    if (!mapRef.current || !window.kakao) return;
-
-    const { kakao } = window;
-    const map = mapRef.current;
-
-    const handleClick = (mouseEvent) => {
-      const latlng = mouseEvent.latLng;
-
-      // 이전 클릭 마커 제거
-      if (clickMarkerRef.current) {
-        clickMarkerRef.current.setMap(null);
-      }
-
-      // 새 마커 생성
-      const marker = new kakao.maps.Marker({
-        position: latlng,
-      });
-
-      marker.setMap(map);
-      clickMarkerRef.current = marker;
-
-      console.log('클릭 위치:', latlng.getLat(), latlng.getLng());
-    };
-
-    kakao.maps.event.addListener(map, 'click', handleClick);
-
-    return () => {
-      kakao.maps.event.removeListener(map, 'click', handleClick);
-    };
-  }, [mapRef]);
-
-  // ============================================
-  // 5. TourAPI 상세 정보 불러오기
-  // ============================================
-  useEffect(() => {
-    // TourAPI 기반이 아니면 상세정보 초기화
     if (!activePlace || activePlace.source !== 'tour') {
       setActiveDetail(null);
       setDetailError(null);
@@ -146,42 +100,32 @@ function PlannerMap({ mode = 'write', initialData }) {
           activePlace.contentTypeId
         );
 
-        if (!cancelled) {
-          setActiveDetail(detail);
-        }
+        if (!cancelled) setActiveDetail(detail);
       } catch (err) {
-        if (!cancelled) {
-          setDetailError(err.message || '상세 조회 실패');
-        }
+        if (!cancelled) setDetailError(err.message || '상세 조회 실패');
       } finally {
-        if (!cancelled) {
-          setDetailLoading(false);
-        }
+        if (!cancelled) setDetailLoading(false);
       }
     })();
 
-    return () => {
-      cancelled = true;
-    };
+    return () => (cancelled = true);
   }, [activePlace]);
 
   // ============================================
-  // 6. 렌더링
+  // 5. 수정 모드일 때 initialData 로 복원
   // ============================================
   useEffect(() => {
     if (mode !== 'edit') return;
     if (!initialData) return;
     if (!planner || !planner.setSelectedPlaces) return;
 
-    // tripMeta도 같이 세팅 (있으면)
     if (initialData.tripMeta) {
       setTripMeta(initialData.tripMeta);
     }
 
-    // initialData.items -> selectedPlaces 형태로 변환
     const restored = (initialData.items || []).map((item, idx) => ({
-      id: item.placeId, // DB placeId
-      routeId: `${item.placeId}-${idx}`, // 수정 모드에서도 고정된 routeId
+      id: item.placeId,
+      routeId: `${item.placeId}-${idx}`,
       order: item.order ?? idx + 1,
       name: item.name,
       addr: item.addr,
@@ -190,12 +134,11 @@ function PlannerMap({ mode = 'write', initialData }) {
       photos: item.photos || [],
       title: item.title || '',
       text: item.text || '',
-      source: 'db', // DB에서 온 데이터라는 표시
+      source: 'db',
     }));
 
     planner.setSelectedPlaces(restored);
 
-    // 중심 좌표가 있으면 지도도 그쪽으로 이동
     if (mapRef.current && window.kakao && initialData.center) {
       const { kakao } = window;
       const pos = new kakao.maps.LatLng(
@@ -205,20 +148,21 @@ function PlannerMap({ mode = 'write', initialData }) {
       mapRef.current.setCenter(pos);
     }
   }, [mode, initialData, planner, mapRef]);
+
+  // ============================================
+  // 7. 렌더링
+  // ============================================
   return (
     <div className="planner-container">
-      {/* 🔥 여행 카테고리 모달 (처음에만 보이고, 다음으로 누르면 사라짐) */}
       {showIntroModal && (
         <TravelCategoryModal
           onNext={(meta) => {
-            setTripMeta(meta); // meta = { withWho, duration, styles }
+            setTripMeta(meta);
             setShowIntroModal(false);
-            // meta는 나중에 글 저장할 때 payload에 같이 보내면 됨
           }}
         />
       )}
 
-      {/* ----- 왼쪽 검색 패널 ----- */}
       <SearchPanel
         regionKeyword={planner.regionKeyword}
         onRegionKeywordChange={planner.setRegionKeyword}
@@ -236,7 +180,6 @@ function PlannerMap({ mode = 'write', initialData }) {
         totalCount={planner.totalCount}
       />
 
-      {/* ----- 가운데 상세 패널 ----- */}
       {activePlace && (
         <div className="detail-panel-wrapper">
           <PlaceDetailPanel
@@ -250,11 +193,9 @@ function PlannerMap({ mode = 'write', initialData }) {
         </div>
       )}
 
-      {/* ----- 오른쪽 지도 + 타임라인 ----- */}
       <div className="map-area">
         <div id="map" className="map-canvas" />
 
-        {/* 타임라인 열기/닫기 버튼 */}
         <button
           type="button"
           className="timeline-toggle-btn"
@@ -263,7 +204,6 @@ function PlannerMap({ mode = 'write', initialData }) {
           {isTimelineOpen ? '타임라인 닫기' : '타임라인 열기'}
         </button>
 
-        {/* 타임라인 사이드바 */}
         <div
           className={`timeline-sidebar ${
             isTimelineOpen
@@ -282,8 +222,8 @@ function PlannerMap({ mode = 'write', initialData }) {
             expandedRouteId={expandedRouteId}
             onItemToggle={handleTimelineToggle}
             onClearAll={() => {
-              planner.handleClearAll(); // 선택된 장소 전부 삭제
-              setExpandedRouteId(null); // 펼쳐진 카드도 초기화
+              planner.handleClearAll();
+              setExpandedRouteId(null);
             }}
             tripMeta={tripMeta}
             mode={mode === 'edit' ? 'edit' : 'create'}
