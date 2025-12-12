@@ -5,6 +5,7 @@ import kakaoIcon from '../../common/images/kakao.png';
 import travlyLogo from '../../common/images/logo2.png';
 import { useAuth } from '../../common/AuthStateContext.jsx';
 import supabase from '../../util/supabaseClient.js';
+import { checkNickname, checkEmail } from '../../util/memberService';
 
 function SignupComp() {
   const navigate = useNavigate();
@@ -19,14 +20,10 @@ function SignupComp() {
   });
 
   // 이메일 / 닉네임 중복 확인 상태
-  const [emailStatus, setEmailStatus] = useState('idle'); // 'idle' | 'ok' | 'error'
+  const [emailStatus, setEmailStatus] = useState('idle'); // 'idle' | 'checking' | 'ok' | 'error'
   const [emailMessage, setEmailMessage] = useState('');
-  const [nicknameStatus, setNicknameStatus] = useState('idle');
+  const [nicknameStatus, setNicknameStatus] = useState('idle'); // 'idle' | 'checking' | 'ok' | 'error'
   const [nicknameMessage, setNicknameMessage] = useState('');
-
-  // 더미 중복 데이터 (나중에 API 연동 시 교체)
-  const usedEmails = ['test@example.com', 'hello@travly.com'];
-  const usedNicknames = ['travler', 'admin', 'tester'];
 
   const onChange = (e) => {
     setForm({ ...form, [e.target.id]: e.target.value });
@@ -48,6 +45,17 @@ function SignupComp() {
       return;
     }
 
+    // 이메일과 닉네임 중복 확인이 완료되었는지 확인
+    if (emailStatus !== 'ok') {
+      alert('이메일 중복 확인을 완료해주세요.');
+      return;
+    }
+
+    if (nicknameStatus !== 'ok') {
+      alert('닉네임 중복 확인을 완료해주세요.');
+      return;
+    }
+
     const result = await signup({
       email: form.email.trim(),
       password: form.password.trim(),
@@ -63,8 +71,8 @@ function SignupComp() {
     navigate('/');
   };
 
-  // ✅ 이메일 중복 체크 (더미)
-  const handleEmailCheck = () => {
+  // ✅ 이메일 중복 체크 (Spring API 사용)
+  const handleEmailCheck = async () => {
     const value = form.email.trim();
 
     if (!value) {
@@ -73,19 +81,52 @@ function SignupComp() {
       return;
     }
 
-    const isUsed = usedEmails.some((e) => e.toLowerCase() === value.toLowerCase());
-
-    if (isUsed) {
+    // 이메일 형식 검증
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value)) {
       setEmailStatus('error');
-      setEmailMessage('이미 사용 중인 이메일입니다.');
-    } else {
-      setEmailStatus('ok');
-      setEmailMessage('사용 가능한 이메일입니다.');
+      setEmailMessage('올바른 이메일 형식이 아닙니다.');
+      return;
+    }
+
+    setEmailStatus('checking');
+    setEmailMessage('중복 확인 중입니다...');
+
+    try {
+      const result = await checkEmail(value);
+
+      if (result.success) {
+        if (result.isExist) {
+          // 중복 있음 (isExist: true)
+          setEmailStatus('error');
+          setEmailMessage('이미 사용 중인 이메일입니다.');
+        } else {
+          // 중복 없음 (isExist: false) - 사용 가능
+          setEmailStatus('ok');
+          setEmailMessage('사용 가능한 이메일입니다.');
+        }
+      } else {
+        // API 호출 실패
+        setEmailStatus('error');
+        
+        // 400 에러인 경우 서버 메시지 표시
+        if (result.status === 400) {
+          setEmailMessage(result.error || '파라미터가 올바르지 않습니다.');
+        } else {
+          setEmailMessage(result.error || '중복 확인 중 오류가 발생했습니다.');
+        }
+        
+        console.error('이메일 중복 확인 실패:', result.error, result.status);
+      }
+    } catch (error) {
+      setEmailStatus('error');
+      setEmailMessage('중복 확인 중 오류가 발생했습니다.');
+      console.error('이메일 중복 확인 예외:', error);
     }
   };
 
-  // ✅ 닉네임 중복 체크 (더미)
-  const handleNicknameCheck = () => {
+  // ✅ 닉네임 중복 체크 (Spring API 사용)
+  const handleNicknameCheck = async () => {
     const value = form.nickname.trim();
 
     if (!value) {
@@ -94,14 +135,39 @@ function SignupComp() {
       return;
     }
 
-    const isUsed = usedNicknames.some((n) => n.toLowerCase() === value.toLowerCase());
+    setNicknameStatus('checking');
+    setNicknameMessage('중복 확인 중입니다...');
 
-    if (isUsed) {
+    try {
+      const result = await checkNickname(value);
+
+      if (result.success) {
+        if (result.isExist) {
+          // 중복 있음 (isExist: true)
+          setNicknameStatus('error');
+          setNicknameMessage('이미 사용 중인 닉네임입니다.');
+        } else {
+          // 중복 없음 (isExist: false) - 사용 가능
+          setNicknameStatus('ok');
+          setNicknameMessage('사용 가능한 닉네임입니다.');
+        }
+      } else {
+        // API 호출 실패
+        setNicknameStatus('error');
+        
+        // 400 에러인 경우 서버 메시지 표시
+        if (result.status === 400) {
+          setNicknameMessage(result.error || '파라미터가 올바르지 않습니다.');
+        } else {
+          setNicknameMessage(result.error || '중복 확인 중 오류가 발생했습니다.');
+        }
+        
+        console.error('닉네임 중복 확인 실패:', result.error, result.status);
+      }
+    } catch (error) {
       setNicknameStatus('error');
-      setNicknameMessage('이미 사용 중인 닉네임입니다.');
-    } else {
-      setNicknameStatus('ok');
-      setNicknameMessage('사용 가능한 닉네임입니다.');
+      setNicknameMessage('중복 확인 중 오류가 발생했습니다.');
+      console.error('닉네임 중복 확인 예외:', error);
     }
   };
 
@@ -204,10 +270,13 @@ function SignupComp() {
                   <button
                     type="button"
                     onClick={handleEmailCheck}
-                    className="rounded-md bg-[#2D7FEA] text-white flex items-center justify-center"
+                    disabled={emailStatus === 'checking'}
+                    className={`rounded-md text-white flex items-center justify-center ${
+                      emailStatus === 'checking' ? 'bg-slate-400 cursor-not-allowed' : 'bg-[#2D7FEA]'
+                    }`}
                     style={{ width: '106px', height: '31px', fontSize: '14px' }}
                   >
-                    중복 확인
+                    {emailStatus === 'checking' ? '확인 중...' : '중복 확인'}
                   </button>
                 </div>
                 {emailMessage && (
@@ -244,10 +313,13 @@ function SignupComp() {
                   <button
                     type="button"
                     onClick={handleNicknameCheck}
-                    className="rounded-md bg-[#2D7FEA] text-white flex items-center justify-center"
+                    disabled={nicknameStatus === 'checking'}
+                    className={`rounded-md text-white flex items-center justify-center ${
+                      nicknameStatus === 'checking' ? 'bg-slate-400 cursor-not-allowed' : 'bg-[#2D7FEA]'
+                    }`}
                     style={{ width: '106px', height: '31px', fontSize: '14px' }}
                   >
-                    중복 확인
+                    {nicknameStatus === 'checking' ? '확인 중...' : '중복 확인'}
                   </button>
                 </div>
                 {nicknameMessage && (

@@ -21,19 +21,43 @@ function SideProfileComp() {
 
   // 프로필 정보 로드 (현재는 localStorage, 나중에 DB로 변경 가능)
   useEffect(() => {
+    // 로그인하지 않은 경우 프로필 초기화
+    if (!userData?.isLoggedIn) {
+      setProfile({
+        nickname: '',
+        email: '',
+        profileImage: null,
+        badge: badge04,
+      });
+      return;
+    }
+
     // localStorage에서 프로필 정보 불러오기
     const saved = localStorage.getItem(PROFILE_STORAGE_KEY);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        setProfile({
-          nickname: parsed.nickname || userName,
-          email: parsed.email || userEmail,
-          profileImage: parsed.profileImage || null,
-          badge: parsed.badge || badge04, // 나중에 DB에서 등급에 따라 배지 선택
-        });
+        // localStorage의 email이 현재 사용자의 email과 일치하는지 확인
+        if (parsed.email === userEmail) {
+          setProfile({
+            nickname: parsed.nickname || userName,
+            email: parsed.email || userEmail,
+            profileImage: parsed.profileImage || null,
+            badge: parsed.badge || badge04, // 나중에 DB에서 등급에 따라 배지 선택
+          });
+        } else {
+          // 이전 사용자 정보이므로 userData 사용하고 localStorage 클리어
+          localStorage.removeItem(PROFILE_STORAGE_KEY);
+          setProfile({
+            nickname: userName,
+            email: userEmail,
+            profileImage: null,
+            badge: badge04,
+          });
+        }
       } catch (err) {
         console.error('프로필 불러오기 실패', err);
+        localStorage.removeItem(PROFILE_STORAGE_KEY);
         setProfile({
           nickname: userName,
           email: userEmail,
@@ -50,7 +74,7 @@ function SideProfileComp() {
         badge: badge04,
       });
     }
-  }, [userName, userEmail]);
+  }, [userName, userEmail, userData?.isLoggedIn]);
 
   const handleLogout = async () => {
     await logout();

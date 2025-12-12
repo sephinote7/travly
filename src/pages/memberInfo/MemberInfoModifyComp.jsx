@@ -1,15 +1,20 @@
 // src/pages/member/MemberInfoModifyComp.jsx
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../common/AuthStateContext';
+import { checkNickname, createOrUpdateMember } from '../../util/memberService';
+import supabase from '../../util/supabaseClient';
 
 const PROFILE_STORAGE_KEY = 'travlyProfile';
 
 function MemberInfoModifyComp() {
   const navigate = useNavigate();
+  const { userData } = useAuth();
+  const { name: userName, email: userEmail } = userData || {};
 
   // 기본 폼 상태
   const [nickname, setNickname] = useState('');
-  const [email, setEmail] = useState('email@email.com');
+  const [email, setEmail] = useState(userEmail || 'email@email.com');
   const [bio, setBio] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
@@ -46,8 +51,8 @@ function MemberInfoModifyComp() {
     }
   };
 
-  // 닉네임 중복 확인 (더미)
-  const handleNicknameCheck = () => {
+  // 닉네임 중복 확인 (Spring API 사용)
+  const handleNicknameCheck = async () => {
     const trimmed = nickname.trim();
 
     if (!trimmed) {
@@ -59,19 +64,37 @@ function MemberInfoModifyComp() {
     setNicknameStatus('checking');
     setNicknameMessage('중복 확인 중입니다...');
 
-    const usedNicknames = ['travly', 'admin', '테스트', 'traveler'];
+    try {
+      const result = await checkNickname(trimmed);
 
-    setTimeout(() => {
-      const isUsed = usedNicknames.some((n) => n.toLowerCase() === trimmed.toLowerCase());
-
-      if (isUsed) {
-        setNicknameStatus('unavailable');
-        setNicknameMessage('이미 사용 중인 닉네임입니다.');
+      if (result.success) {
+        if (result.isExist) {
+          // 중복 있음 (isExist: true)
+          setNicknameStatus('unavailable');
+          setNicknameMessage('이미 사용 중인 닉네임입니다.');
+        } else {
+          // 중복 없음 (isExist: false) - 사용 가능
+          setNicknameStatus('available');
+          setNicknameMessage('사용 가능한 닉네임입니다.');
+        }
       } else {
-        setNicknameStatus('available');
-        setNicknameMessage('사용 가능한 닉네임입니다.');
+        // API 호출 실패
+        setNicknameStatus('error');
+
+        // 400 에러인 경우 서버 메시지 표시
+        if (result.status === 400) {
+          setNicknameMessage(result.error || '파라미터가 올바르지 않습니다.');
+        } else {
+          setNicknameMessage(result.error || '중복 확인 중 오류가 발생했습니다.');
+        }
+
+        console.error('닉네임 중복 확인 실패:', result.error, result.status);
       }
-    }, 500);
+    } catch (error) {
+      setNicknameStatus('error');
+      setNicknameMessage('중복 확인 중 오류가 발생했습니다.');
+      console.error('닉네임 중복 확인 예외:', error);
+    }
   };
 
   // 프로필 이미지 업로드
@@ -89,25 +112,144 @@ function MemberInfoModifyComp() {
     setProfilePreview(imageUrl);
   };
 
+  // 초기 데이터 로드
+  useEffect(() => {
+    if (!userData?.isLoggedIn || !userEmail) {
+      setEmail('email@email.com');
+      setNickname('');
+      setBio('');
+      return;
+    }
+
+    setEmail(userEmail);
+    const saved = localStorage.getItem(PROFILE_STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // localStorage의 email이 현재 사용자의 email과 일치하는지 확인
+        if (parsed.email === userEmail) {
+          setNickname(parsed.nickname || userName || '');
+          setBio(parsed.bio || '');
+          setProfilePreview(parsed.profileImage || null);
+        } else {
+          // 이전 사용자 정보이므로 localStorage 클리어하고 userData 사용
+          localStorage.removeItem(PROFILE_STORAGE_KEY);
+          setNickname(userName || '');
+          setBio('');
+          setProfilePreview(null);
+        }
+      } catch (err) {
+        console.error('프로필 불러오기 실패', err);
+        localStorage.removeItem(PROFILE_STORAGE_KEY);
+        setNickname(userName || '');
+        setBio('');
+        setProfilePreview(null);
+      }
+    } else {
+      setNickname(userName || '');
+      setBio('');
+      setProfilePreview(null);
+    }
+  }, [userName, userEmail, userData?.isLoggedIn]);
+
   // 제출 + 저장 + 이동
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (passwordError) return;
 
-    const profileData = {
-      nickname,
-      email,
-      bio,
-      profileImage: profilePreview || null,
-    };
+    // 로그인 확인
+    if (!userData?.isLoggedIn || !userData?.id) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
 
-    // localStorage에 저장 (브라우저에 영구 저장되는 키/값 저장소)[web:71]
-    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profileData));
+    // 닉네임 중복 확인이 완료되지 않았거나 사용 불가능한 경우
+    if (nicknameStatus !== 'available' && nicknameStatus !== 'idle') {
+      alert('닉네임 중복 확인을 완료해주세요.');
+      return;
+    }
 
-    // TODO: 실제 서버로 수정 요청 보내기
+    // 로딩 상태 표시 (선택사항)
+    const submitButton = e.target.querySelector('button[type="submit"]');
+    const originalText = submitButton?.textContent;
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = '저장 중...';
+    }
 
-    navigate('/memberinfo');
+    try {
+      // 1. 비밀번호 변경 처리 (입력된 경우에만)
+      if (password && password.trim() !== '') {
+        if (password !== passwordConfirm) {
+          alert('비밀번호가 일치하지 않습니다.');
+          if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = originalText || '수정 하기';
+          }
+          return;
+        }
+
+        // Supabase로 비밀번호 변경
+        const { error: passwordError } = await supabase.auth.updateUser({
+          password: password.trim(),
+        });
+
+        if (passwordError) {
+          alert('비밀번호 변경에 실패했습니다: ' + passwordError.message);
+          if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = originalText || '수정 하기';
+          }
+          return;
+        }
+
+        // 비밀번호 변경 성공
+        console.log('✅ 비밀번호 변경 성공');
+      }
+
+      // 2. Spring API로 회원정보 생성/수정 요청
+      const result = await createOrUpdateMember({
+        authUuid: userData.id, // Supabase auth UUID
+        name: userName || nickname || '', // 이름 (없으면 닉네임 사용)
+        nickname: nickname.trim(),
+        introduction: bio.trim() || '',
+        profileImageFileId: null, // TODO: 파일 업로드 후 받은 파일 ID로 변경
+      });
+
+      if (result.success) {
+        // 성공: localStorage에도 저장 (로컬 캐시용)
+        const profileData = {
+          nickname,
+          email: userEmail || email,
+          bio,
+          profileImage: profilePreview || null,
+        };
+        localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profileData));
+
+        // 성공 메시지 표시
+        const successMessage =
+          password && password.trim() !== ''
+            ? '비밀번호와 회원정보가 성공적으로 저장되었습니다.'
+            : '회원정보가 성공적으로 저장되었습니다.';
+        alert(successMessage);
+        navigate('/memberinfo');
+      } else {
+        // 실패: 에러 메시지 표시
+        const errorMessage = result.error || '회원정보 저장에 실패했습니다.';
+        alert(errorMessage);
+        console.error('회원정보 저장 실패:', result);
+      }
+    } catch (error) {
+      console.error('회원정보 저장 예외:', error);
+      alert('회원정보 저장 중 오류가 발생했습니다.');
+    } finally {
+      // 버튼 상태 복원
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = originalText || '수정 하기';
+      }
+    }
   };
 
   return (

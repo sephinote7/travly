@@ -8,6 +8,7 @@ import SignupComp from './pages/signup/SignupComp';
 import MemberInfoRoutes from './Routes/MemberInfoRoutes';
 import MemberInfoComp from '../src/pages/memberInfo/MemberInfoComp';
 import MemberInfoModify from '../src/pages/memberInfo/MemberInfoModifyComp';
+import DatabaseTestComp from './pages/test/DatabaseTestComp';
 import { AuthProvider } from './common/AuthStateContext';
 
 /* eslint-disable */
@@ -26,6 +27,7 @@ function App() {
             <Route path="signup" element={<SignupComp />} />
             <Route path="memberinfo" element={<MemberInfoComp />} />
             <Route path="memberinfo/modify" element={<MemberInfoModify />} />
+            <Route path="test/db" element={<DatabaseTestComp />} />
           </Route>
         </Routes>
       </AuthProvider>

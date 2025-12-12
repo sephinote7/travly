@@ -1,6 +1,7 @@
 // src/pages/memberInfo/MemberInfoComp.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../common/AuthStateContext';
 
 // 이미지 경로 수정
 import defaultAvatar from '../../common/images/logo2.png';
@@ -125,10 +126,12 @@ const bookmarkedPostsDummy = [
 
 function MemberInfoComp() {
   const navigate = useNavigate();
+  const { userData } = useAuth();
+  const { name: userName, email: userEmail } = userData || {};
 
   const [profile, setProfile] = useState({
-    nickname: '닉네임',
-    email: '이메일@이메일.com',
+    nickname: userName || '닉네임',
+    email: userEmail || '이메일@이메일.com',
     bio: '',
     profileImage: null,
   });
@@ -137,15 +140,60 @@ function MemberInfoComp() {
   const [bookmarkedPosts] = useState(bookmarkedPostsDummy);
 
   useEffect(() => {
-    const saved = localStorage.getItem(PROFILE_STORAGE_KEY);
-    if (!saved) return;
-    try {
-      const parsed = JSON.parse(saved);
-      setProfile((prev) => ({ ...prev, ...parsed }));
-    } catch (err) {
-      console.error('프로필 불러오기 실패', err);
+    // userData가 없으면 초기화
+    if (!userData?.isLoggedIn || !userEmail) {
+      setProfile({
+        nickname: '닉네임',
+        email: '이메일@이메일.com',
+        bio: '',
+        profileImage: null,
+      });
+      return;
     }
-  }, []);
+
+    const saved = localStorage.getItem(PROFILE_STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // localStorage의 email이 현재 사용자의 email과 일치하는지 확인
+        if (parsed.email === userEmail) {
+          setProfile((prev) => ({
+            ...prev,
+            nickname: parsed.nickname || userName,
+            email: parsed.email || userEmail,
+            bio: parsed.bio || '',
+            profileImage: parsed.profileImage || null,
+          }));
+        } else {
+          // 이전 사용자 정보이므로 userData 사용하고 localStorage 클리어
+          localStorage.removeItem(PROFILE_STORAGE_KEY);
+          setProfile({
+            nickname: userName || '닉네임',
+            email: userEmail,
+            bio: '',
+            profileImage: null,
+          });
+        }
+      } catch (err) {
+        console.error('프로필 불러오기 실패', err);
+        localStorage.removeItem(PROFILE_STORAGE_KEY);
+        setProfile({
+          nickname: userName || '닉네임',
+          email: userEmail,
+          bio: '',
+          profileImage: null,
+        });
+      }
+    } else {
+      // localStorage에 없으면 userData 사용
+      setProfile({
+        nickname: userName || '닉네임',
+        email: userEmail,
+        bio: '',
+        profileImage: null,
+      });
+    }
+  }, [userName, userEmail, userData?.isLoggedIn]);
 
   const handleProfileEdit = () => {
     navigate('/memberinfo/modify');

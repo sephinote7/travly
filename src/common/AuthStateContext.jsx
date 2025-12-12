@@ -9,6 +9,7 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }) => {
   const [userData, setUserData] = useState({
     isLoggedIn: false,
+    id: null, // Supabase auth UUID
     name: null,
     email: null,
   });
@@ -48,6 +49,7 @@ export const AuthProvider = ({ children }) => {
       if (session) {
         setUserData({
           isLoggedIn: true,
+          id: session.user.id, // Supabase auth UUID
           name: session.user.user_metadata?.nickname ?? session.user.user_metadata?.full_name ?? null,
           email: session.user.email,
         });
@@ -82,6 +84,7 @@ export const AuthProvider = ({ children }) => {
 
         setUserData({
           isLoggedIn: true,
+          id: session.user.id, // Supabase auth UUID
           name: session.user.user_metadata?.nickname ?? session.user.user_metadata?.full_name ?? null,
           email: session.user.email,
         });
@@ -100,7 +103,7 @@ export const AuthProvider = ({ children }) => {
           }
         }
       } else {
-        setUserData({ isLoggedIn: false, name: null, email: null });
+        setUserData({ isLoggedIn: false, id: null, name: null, email: null });
         setIsUserCompOpen(false);
       }
     });
@@ -129,10 +132,11 @@ export const AuthProvider = ({ children }) => {
     });
 
     if (error) return { success: false, error };
+
     return { success: true, data };
   };
 
-  // ⭐ 로그인
+  // ⭐ 로그인 (Supabase 사용)
   const login = async ({ email, password }) => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -143,6 +147,7 @@ export const AuthProvider = ({ children }) => {
 
     setUserData({
       isLoggedIn: true,
+      id: data.user.id, // Supabase auth UUID
       name: data.user.user_metadata?.nickname ?? null,
       email: data.user.email,
     });
@@ -154,8 +159,10 @@ export const AuthProvider = ({ children }) => {
   // ⭐ 로그아웃
   const logout = async () => {
     await supabase.auth.signOut();
-    setUserData({ isLoggedIn: false, name: null, email: null });
+    setUserData({ isLoggedIn: false, id: null, name: null, email: null });
     setIsUserCompOpen(false);
+    // localStorage에서 프로필 정보 제거
+    localStorage.removeItem('travlyProfile');
   };
 
   return (
