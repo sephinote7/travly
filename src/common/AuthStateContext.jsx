@@ -1,4 +1,5 @@
-// src/common/AuthStateContext.jsx
+// src/common/AuthStateContext.jsx (memberId 추출 강화)
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../util/supabaseClient.js';
 
@@ -6,23 +7,43 @@ const AuthContext = createContext(null);
 
 export const useAuth = () => useContext(AuthContext);
 
+// ⭐ 헬퍼 함수: Supabase User 객체에서 필요한 데이터를 깔끔하게 추출 (memberId 탐색 로직 강화)
+const extractUserData = (user) => {
+  // 1. user_metadata, raw_user_meta_data, app_metadata 등 다양한 위치에서 memberId 값을 찾습니다.
+  const memberIdValue =
+    user.user_metadata?.memberId ||
+    user.raw_user_meta_data?.memberId ||
+    user.app_metadata?.memberId || // app_metadata도 체크합니다.
+    null;
+
+  // 2. 찾은 값이 있으면 parseInt를 사용하여 숫자로 변환합니다.
+  const memberId = memberIdValue ? parseInt(memberIdValue, 10) : null;
+
+  return {
+    isLoggedIn: true,
+    name: user.user_metadata?.nickname ?? user.user_metadata?.full_name ?? null,
+    email: user.email,
+    // ⭐ memberId를 숫자로 변환하여 반환
+    memberId: memberId,
+  };
+};
+
 export const AuthProvider = ({ children }) => {
   const [userData, setUserData] = useState({
     isLoggedIn: false,
     name: null,
     email: null,
+    memberId: null,
   });
 
   const [isUserCompOpen, setIsUserCompOpen] = useState(false);
-
-  // 헤더에서 띄우는 로그인 모달 상태
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
-  // ⭐ Supabase 로그인 세션 체크
+  // ⭐ Supabase 로그인 세션 체크 (memberId 포함)
   useEffect(() => {
     let initialSessionChecked = false;
+    // ... (checkOAuthRedirect 함수는 생략) ...
 
-    // OAuth 리디렉션 감지 (URL 해시 및 쿼리 파라미터 확인)
     const checkOAuthRedirect = () => {
       const hash = window.location.hash;
       const search = window.location.search;
@@ -46,21 +67,13 @@ export const AuthProvider = ({ children }) => {
       const isOAuthRedirect = checkOAuthRedirect();
 
       if (session) {
-        setUserData({
-          isLoggedIn: true,
-          name:
-            session.user.user_metadata?.nickname ??
-            session.user.user_metadata?.full_name ??
-            null,
-          email: session.user.email,
-        });
+        // ⭐ 수정: extractUserData 헬퍼 함수를 사용하여 데이터 설정
+        setUserData(extractUserData(session.user));
 
-        // OAuth 리디렉션인 경우 프로필 모달 자동 오픈 및 로그인 모달 닫기
         if (isOAuthRedirect) {
           setIsUserCompOpen(true);
           setIsLoginModalOpen(false);
 
-          // URL 정리 (해시 및 쿼리 파라미터 제거)
           setTimeout(() => {
             const cleanUrl = window.location.pathname;
             window.history.replaceState(null, '', cleanUrl);
@@ -70,13 +83,10 @@ export const AuthProvider = ({ children }) => {
       initialSessionChecked = true;
     };
 
-    // 세션 체크 먼저 실행
     checkSession();
 
-    // 세션 변경(OAuth 리디렉션 포함) 실시간 반영
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        // 초기 세션 체크가 완료될 때까지 기다림
         if (!initialSessionChecked) {
           return;
         }
@@ -84,21 +94,13 @@ export const AuthProvider = ({ children }) => {
         if (session) {
           const isOAuthRedirect = checkOAuthRedirect();
 
-          setUserData({
-            isLoggedIn: true,
-            name:
-              session.user.user_metadata?.nickname ??
-              session.user.user_metadata?.full_name ??
-              null,
-            email: session.user.email,
-          });
+          // ⭐ 수정: extractUserData 헬퍼 함수를 사용하여 데이터 설정
+          setUserData(extractUserData(session.user));
 
-          // OAuth 리디렉션이거나 새로 로그인된 경우 프로필 모달 자동 오픈
           if (isOAuthRedirect || event === 'SIGNED_IN') {
             setIsUserCompOpen(true);
-            setIsLoginModalOpen(false); // 로그인 모달 닫기
+            setIsLoginModalOpen(false);
 
-            // URL 정리 (해시 및 쿼리 파라미터 제거)
             if (isOAuthRedirect) {
               setTimeout(() => {
                 const cleanUrl = window.location.pathname;
@@ -107,7 +109,13 @@ export const AuthProvider = ({ children }) => {
             }
           }
         } else {
-          setUserData({ isLoggedIn: false, name: null, email: null });
+          // ⭐ 수정: 로그아웃 시 memberId도 초기화
+          setUserData({
+            isLoggedIn: false,
+            name: null,
+            email: null,
+            memberId: null,
+          });
           setIsUserCompOpen(false);
         }
       }
@@ -125,8 +133,9 @@ export const AuthProvider = ({ children }) => {
   const openLoginModal = () => setIsLoginModalOpen(true);
   const closeLoginModal = () => setIsLoginModalOpen(false);
 
-  // ⭐ 회원가입
+  // 회원가입
   const signup = async ({ email, password, nickname }) => {
+    // ... (회원가입 로직은 변경 없음)
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password: password.trim(),
@@ -140,7 +149,7 @@ export const AuthProvider = ({ children }) => {
     return { success: true, data };
   };
 
-  // ⭐ 로그인
+  // ⭐ 로그인 로직 수정 (memberId 추출)
   const login = async ({ email, password }) => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -149,27 +158,27 @@ export const AuthProvider = ({ children }) => {
 
     if (error) return { success: false, error };
 
-    setUserData({
-      isLoggedIn: true,
-      name: data.user.user_metadata?.nickname ?? null,
-      email: data.user.email,
-    });
+    // ⭐ 수정: 로그인 성공 후, extractUserData 헬퍼 함수를 사용하여 userData를 설정
+    if (data.user) {
+      setUserData(extractUserData(data.user));
+    }
 
     closeUserComp();
     return { success: true };
   };
 
-  // ⭐ 로그아웃
+  // 로그아웃
   const logout = async () => {
     await supabase.auth.signOut();
-    setUserData({ isLoggedIn: false, name: null, email: null });
+    // ⭐ 수정: 로그아웃 시 memberId도 명확히 초기화
+    setUserData({ isLoggedIn: false, name: null, email: null, memberId: null });
     setIsUserCompOpen(false);
   };
 
   return (
     <AuthContext.Provider
       value={{
-        userData,
+        userData, // ⭐ userData에 memberId 포함됨
         isUserCompOpen,
         toggleUserComp,
         closeUserComp,

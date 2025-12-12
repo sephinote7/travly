@@ -13,11 +13,10 @@ import badge04 from '../../common/images/badge04.png';
 import badge05 from '../../common/images/badge05.png';
 import dayjs from 'dayjs';
 
+import apiClient from '../../services/apiClient';
+
 export default function RecentBoardList() {
   const navigate = useNavigate();
-
-  // B.E 서버에서 이미지 가져오는 주소
-  const IMAGE_BASE_URL = '';
 
   // 💡 1. 상태 추가: 게시글 데이터와 로딩 상태
   const [recentBoards, setRecentBoards] = useState([]);
@@ -32,16 +31,20 @@ export default function RecentBoardList() {
     5: badge04,
   };
 
+  const IMAGE_BASE_URL = 'http://localhost:8080/api/travly/file/';
+
   // -----------------------------
   // 3. API 연동 로직 (가장 중요)
   // -----------------------------
   useEffect(() => {
-    axios
-      .get('http://localhost:8080/api/travly/board/recent') // 🎯 API 경로 확인
+    apiClient
+      .get('/board?size=9&page=0&orderby=updated') // 🎯 API 경로 확인
       .then((res) => {
-        setRecentBoards(res.data);
+        const boardList = res.data.content || [];
+
+        setRecentBoards(boardList);
         setIsLoading(false); // 로드 성공
-        console.log('recentBoard', res.data);
+        console.log('recentBoard', boardList);
       })
       .catch((err) => {
         console.error('최신 게시글 로드 실패:', err);
@@ -73,7 +76,7 @@ export default function RecentBoardList() {
           새로 올라온 이야기
         </h2>
         <Link
-          to="/board"
+          to="/board?size=9&page=0&orderby=updated"
           className="text-sky-400 font-bold hover:text-sky-900 absolute right-0 top-0"
         >
           + 더 많은 글 보기
@@ -89,9 +92,13 @@ export default function RecentBoardList() {
           {recentBoards.map((board, i) => (
             <Link key={board.id} to={`/board/${board.id}`} className="block">
               <div className="bg-white border border-neutral-500 shadow rounded-xl overflow-hidden w-[350px] h-[590px] transition duration-300 hover:shadow-xl">
-                {/* 이미지 (⚠️ 실제 API에서 썸네일 URL을 받아와야 합니다. 여기서는 임시 경로 유지) */}
                 <img
-                  src={board.cardImg || noimage}
+                  // 썸네일 파일명을 서버 경로와 합쳐 완전한 URL을 만듭니다.
+                  src={
+                    board.thumbnailFilename
+                      ? IMAGE_BASE_URL + board.thumbnailFilename
+                      : noimage
+                  }
                   className="w-full h-[250px] object-cover"
                   alt={board.title}
                 />
@@ -105,8 +112,8 @@ export default function RecentBoardList() {
 
                     {/* 날자 */}
                     <p className="ctext text-right mb-3 text-gray-500">
-                      {board.createdAt
-                        ? dayjs(board.createdAt).format('YYYY.MM.DD | HH:mm')
+                      {board.updatedAt
+                        ? dayjs(board.updatedAt).format('YYYY.MM.DD | HH:mm')
                         : '날짜 미정'}
                     </p>
 
@@ -118,13 +125,16 @@ export default function RecentBoardList() {
                       {/* 프로필 및 뱃지*/}
                       <div className="flex gap-4 items-center  p-1 ms-auto">
                         <img
-                          // 💡 DTO의 profileImg 필드 사용 (URL을 받아온다고 가정)
-                          src={board.profileImg || testprofile}
+                          src={
+                            board.memberThumbail
+                              ? IMAGE_BASE_URL + board.memberThumbail
+                              : testprofile
+                          }
                           className="w-[50px] h-[50px] rounded-full border border-neutral-500 object-cover"
                           alt="profile"
                         />
                         <div className="flex flex-col text-right">
-                          <p className="p font-bold">{board.memberName}</p>
+                          <p className="p font-bold">{board.memberNickname}</p>
                           {/* 💡 DTO 필드명에 맞춰 board.createdAt 사용 */}
                           <img
                             // 💡 배지 ID에 따라 동적으로 이미지 설정
@@ -142,12 +152,12 @@ export default function RecentBoardList() {
 
                     {/* 태그 */}
                     <p className="ctext mb-[20px] line-clamp-1">
-                      {formatTags(board.tags)}
+                      {formatTags(board.filterItemNames)}
                     </p>
 
                     {/* 본문 */}
                     <p className="ctext line-clamp-4 h-[65px] hover:underline">
-                      {board.content}
+                      {board.placeContent}
                     </p>
                   </div>
 
