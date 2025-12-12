@@ -1,20 +1,31 @@
-// src/components/PlannerMap.jsx
+// src/components/PlannerMap.jsx (지금 너 파일에 있는 PlannerMap 부분)
 import { useState, useEffect, useRef } from 'react';
-import { useKakaoMap } from '../../../hooks/useKakaoMap';
-import { useTripPlanner } from '../../../hooks/useTripPlanner';
-import SearchPanel from './SearchPanel';
-import Timeline from './Timeline';
-import PlaceDetailPanel from './PlaceDetailPanel';
-import { fetchTourPlaceDetail } from '../../../services/tourApiService';
-import '../../../styles/PlannerMap.css';
-import TravelCategoryModal from './TravelCategoryModal';
+import { useKakaoMap } from '../../hooks/useKakaoMap';
+import { useTripPlanner } from '../../hooks/useTripPlanner';
+import SearchPanel from './components/SearchPanel';
+import Timeline from './components/Timeline';
+import PlaceDetailPanel from './components/PlaceDetailPanel';
+import { fetchTourPlaceDetail } from '../../services/tourApiService';
+import '../../styles/PlannerMap.css';
+import TravelCategoryModal from './components/TravelCategoryModal';
 
-// ⭐ 지도 util: ViewComp와 동일한 마커/경로 그리기 기능
+const TRIP_META_KEY = 'travly.tripMeta';
 
 function PlannerMap({ mode = 'write', initialData }) {
-  //0. 모달
-  const [showIntroModal, setShowIntroModal] = useState(true);
-  const [tripMeta, setTripMeta] = useState(null);
+  // ✅ F5 유지: localStorage에서 tripMeta 복원
+  const [tripMeta, setTripMeta] = useState(() => {
+    try {
+      const saved = localStorage.getItem(TRIP_META_KEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  // ✅ F5 유지: 저장된 tripMeta가 있으면 모달 스킵
+  const [showIntroModal, setShowIntroModal] = useState(() => {
+    return !localStorage.getItem(TRIP_META_KEY);
+  });
 
   // ============================================
   // 1. 지도 / 플래너 훅
@@ -25,14 +36,9 @@ function PlannerMap({ mode = 'write', initialData }) {
   // ============================================
   // 2. UI 상태
   // ============================================
-
-  // 타임라인 열림/닫힘
   const [isTimelineOpen, setIsTimelineOpen] = useState(true);
-
-  // 타임라인에서 펼친 routeId
   const [expandedRouteId, setExpandedRouteId] = useState(null);
 
-  // 상세 패널 상태
   const [activePlace, setActivePlace] = useState(null);
   const [activeDetail, setActiveDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -41,16 +47,13 @@ function PlannerMap({ mode = 'write', initialData }) {
   // ============================================
   // 3. 핸들러들
   // ============================================
-
   const handleTimelineToggle = (place) => {
     setExpandedRouteId((prev) =>
       prev === place.routeId ? null : place.routeId
     );
   };
 
-  const toggleTimeline = () => {
-    setIsTimelineOpen((prev) => !prev);
-  };
+  const toggleTimeline = () => setIsTimelineOpen((prev) => !prev);
 
   const handleSearchResultClick = (place) => {
     setActivePlace(place);
@@ -76,6 +79,17 @@ function PlannerMap({ mode = 'write', initialData }) {
     setActivePlace(null);
     setActiveDetail(null);
     setDetailError(null);
+  };
+
+  // ✅ ← 버튼: confirm + 강한 리셋 후 카테고리로
+  const handleBackToCategory = () => {
+    const ok = window.confirm('카테고리로 돌아가시겠습니까?');
+    if (!ok) return;
+
+    // 강한 리셋
+    localStorage.removeItem(TRIP_META_KEY);
+    setTripMeta(null);
+    setShowIntroModal(true);
   };
 
   // ============================================
@@ -121,6 +135,9 @@ function PlannerMap({ mode = 'write', initialData }) {
 
     if (initialData.tripMeta) {
       setTripMeta(initialData.tripMeta);
+      // (선택) 수정 페이지에서 tripMeta도 유지하려면 저장해도 됨
+      // localStorage.setItem(TRIP_META_KEY, JSON.stringify(initialData.tripMeta));
+      // setShowIntroModal(false);
     }
 
     const restored = (initialData.items || []).map((item, idx) => ({
@@ -154,11 +171,31 @@ function PlannerMap({ mode = 'write', initialData }) {
   // ============================================
   return (
     <div className="planner-container">
+      {/* ✅ 플래너 화면일 때만 ← 버튼 보여주기 */}
+      {!showIntroModal && (
+        <button
+          type="button"
+          className="tcm-global-back-btn"
+          onClick={handleBackToCategory}
+          style={{ position: 'fixed', top: 12, left: 12, zIndex: 9999 }}
+        >
+          ←
+        </button>
+      )}
+
       {showIntroModal && (
         <TravelCategoryModal
           onNext={(meta) => {
             setTripMeta(meta);
+            localStorage.setItem(TRIP_META_KEY, JSON.stringify(meta)); // ✅ 저장
             setShowIntroModal(false);
+          }}
+          onClose={() => {
+            // “닫기”를 허용할지 정책 선택:
+            // 1) 아예 못 닫게: return;
+            // 2) 닫으면 그냥 플래너로: setShowIntroModal(false);
+            // 보통은 카테고리 필수라서 닫기 막는 게 안전.
+            return;
           }}
         />
       )}

@@ -1,7 +1,7 @@
 import { Route } from 'react-router-dom';
 import BoardComp from '../pages/board/BoardComp';
 import ListComp from '../pages/board/ListComp';
-import WriteComp from '../pages/board/components/PlannerMap';
+import WriteComp from '../pages/board/WriteComp';
 import ModifyComp from '../pages/board/ModifyComp';
 import ViewComp from '../pages/board/ViewComp';
 // import CommentComp from '../pages/board/CommentComp'; // 일반적으로 ViewComp 내부에 렌더링되지만, 라우팅을 분리할 경우

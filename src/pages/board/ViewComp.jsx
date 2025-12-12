@@ -4,6 +4,7 @@ import '../../styles/ViewComp.css';
 import apiClient from '../../services/apiClient';
 import { useKakaoMap } from '../../hooks/useKakaoMap';
 import { redrawMarkersAndPolyline } from '../../utils/mapDrawingUtils';
+import { useNavigate } from 'react-router-dom';
 
 // 🔥 마커 색상들 (원하는 대로 바꿔도 됨)
 const MARKER_COLORS = ['#3b82f6', '#10b981', '#f97316', '#ec4899', '#6366f1'];
@@ -81,6 +82,22 @@ function ViewComp() {
   const mapRef = useKakaoMap('map'); // #map 요소에 카카오맵 생성
   const markersRef = useRef([]); // 현재 마커들
   const polylineRef = useRef(null); // 현재 polyline
+
+  const navigate = useNavigate();
+
+  async function handleDelete() {
+    const ok = window.confirm('정말 삭제하시겠습니까?');
+    if (!ok) return;
+
+    try {
+      await apiClient.delete(`/board/${board.id}`); // ✅ DELETE /board/{boardId}
+      alert('삭제되었습니다.');
+      navigate('/board'); // 목록으로
+    } catch (err) {
+      console.error('삭제 실패:', err);
+      alert('삭제에 실패했습니다.');
+    }
+  }
 
   // 1) Board 데이터 불러오기
   useEffect(() => {
@@ -186,8 +203,33 @@ function ViewComp() {
               alt={board.writer.nickname}
               className="view-writer-avatar"
             />
-            <div>
-              <div className="view-writer-name">{board.writer.nickname}</div>
+
+            {/* 왼쪽: 닉네임/메타 */}
+            <div className="view-writer-info">
+              <div className="view-writer-name-row">
+                <span className="view-writer-name">
+                  {board.writer.nickname}
+                </span>
+
+                {/* ✅ 닉네임 옆 버튼 100*48 */}
+                <div className="view-writer-actions">
+                  <button
+                    type="button"
+                    className="view-writer-btn view-writer-btn--edit"
+                    onClick={() => navigate(`/board/modify/${board.id}`)}
+                  >
+                    수정
+                  </button>
+                  <button
+                    type="button"
+                    className="view-writer-btn view-writer-btn--delete"
+                    onClick={handleDelete}
+                  >
+                    삭제
+                  </button>
+                </div>
+              </div>
+
               <div className="view-writer-meta">
                 여행의 달인 · Lv.{board.writer.level}
               </div>
