@@ -6,9 +6,12 @@ import WriteComp from './WriteComp';
 
 export default function ModifyComp() {
   const { id } = useParams(); // /board/edit/:id 같은 라우트 가정
+  const location = useLocation();
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [initialData, setInitialData] = useState(null);
+  const boardFromView = location.state?.boardApi || null; // ✅ ViewComp에서 넘어온 데이터
 
   useEffect(() => {
     let cancelled = false;
@@ -18,8 +21,15 @@ export default function ModifyComp() {
         setLoading(true);
         setError(null);
 
+        // ✅ 1) ViewComp에서 넘어온 데이터 있으면 그걸로 바로 세팅
+        if (boardFromView) {
+          const mapped = mapBoardToPlannerInitialData(boardFromView);
+          if (!cancelled) setInitialData(mapped);
+          return;
+        }
+
         // ✅ GET http://localhost:8080/api/travly/board/1
-        const res = await apiClient.get(`/board/`);
+        const res = await apiClient.get(`/board/${id}`);
 
         // ⚠️ 여기서 “백엔드 응답을 PlannerMap이 원하는 형태로 변환”
         const mapped = mapBoardToPlannerInitialData(res.data);

@@ -75,6 +75,7 @@ function mapBoardApiToViewModel(apiBoard) {
 
 function ViewComp() {
   const [board, setBoard] = useState(null);
+  const [rawBoard, setRawBoard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -105,6 +106,7 @@ function ViewComp() {
       try {
         // apiClient baseURL이 "http://localhost:8080/api" 라고 가정
         const res = await apiClient.get('/board/11');
+        setRawBoard(res.data);
         const mapped = mapBoardApiToViewModel(res.data);
         setBoard(mapped);
       } catch (err) {
@@ -216,7 +218,11 @@ function ViewComp() {
                   <button
                     type="button"
                     className="view-writer-btn view-writer-btn--edit"
-                    onClick={() => navigate(`/board/modify/${board.id}`)}
+                    onClick={() =>
+                      navigate(`/board/modify/${board.id}`, {
+                        state: { boardApi: rawBoard },
+                      })
+                    }
                   >
                     수정
                   </button>
