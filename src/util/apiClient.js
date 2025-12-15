@@ -20,68 +20,70 @@ const apiClient = axios.create({
   },
 });
 
-// 요청 인터셉터 (요청 전에 실행)
+// 요청 인터셉터: Authorization 헤더 추가
 apiClient.interceptors.request.use(
   (config) => {
-    // 로그인 토큰이 있으면 헤더에 추가
     const token = localStorage.getItem('authToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
-    // 디버깅: 실제 요청 URL 확인 (개발 환경에서만)
+
+    // FormData를 사용하는 경우 Content-Type을 제거하여 Axios가 자동으로 설정하도록 함
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+
     if (import.meta.env.DEV) {
-      const fullUrl = `${config.baseURL}${config.url}${config.params ? '?' + new URLSearchParams(config.params).toString() : ''}`;
+      const fullUrl = `${config.baseURL}${config.url}${
+        config.params ? '?' + new URLSearchParams(config.params).toString() : ''
+      }`;
       console.log('📤 API Request:', config.method?.toUpperCase(), fullUrl);
     }
-    
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// 응답 인터셉터 (응답 후에 실행)
+// 응답 인터셉터: 에러 처리
 apiClient.interceptors.response.use(
   (response) => {
-    // 성공적인 응답은 그대로 반환
-    // 디버깅: 응답 데이터 확인 (개발 환경에서만)
     if (import.meta.env.DEV) {
       console.log('📥 API Response:', response.status, response.config.url, response.data);
     }
     return response;
   },
   (error) => {
-    // 에러 처리
-    if (error.response) {
-      // 서버에서 응답이 온 경우
-      switch (error.response.status) {
-        case 401:
-          // 인증 실패 - 로그인 페이지로 리다이렉트
-          console.error('인증 실패: 로그인이 필요합니다.');
-          // 필요시 로그인 페이지로 리다이렉트
-          // window.location.href = '/?login=open';
-          break;
-        case 403:
-          console.error('권한 없음: 접근 권한이 없습니다.');
-          break;
-        case 404:
-          console.error('리소스를 찾을 수 없습니다.');
-          break;
-        case 500:
-          console.error('서버 오류가 발생했습니다.');
-          break;
-        default:
-          console.error('API 요청 실패:', error.response.data);
-      }
-    } else if (error.request) {
-      // 요청은 보냈지만 응답을 받지 못한 경우
-      console.error('서버에 연결할 수 없습니다.');
-    } else {
-      // 요청 설정 중 오류 발생
-      console.error('요청 설정 오류:', error.message);
+    if (import.meta.env.DEV) {
+      console.error(
+        '❌ API Response Error:',
+        error.response?.status,
+        error.config?.url,
+        error.response?.data || error.message
+      );
     }
+
+    // 401 Unauthorized: 인증 실패
+    if (error.response?.status === 401) {
+      console.warn('⚠️ 인증 실패: 토큰이 만료되었거나 유효하지 않습니다.');
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('refreshToken');
+    }
+
+    // 403 Forbidden: 권한 없음
+    if (error.response?.status === 403) {
+      console.warn('⚠️ 권한 없음: 이 작업을 수행할 권한이 없습니다.');
+    }
+
+    // 404 Not Found: 리소스를 찾을 수 없음
+    if (error.response?.status === 404) {
+      console.warn('⚠️ 리소스를 찾을 수 없습니다:', error.config?.url);
+    }
+
+    // 500 Internal Server Error: 서버 오류
+    if (error.response?.status === 500) {
+      console.error('❌ 서버 오류가 발생했습니다.');
+    }
+
     return Promise.reject(error);
   }
 );

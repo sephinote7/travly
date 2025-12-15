@@ -4,10 +4,10 @@ import { useNavigate } from 'react-router-dom';
 
 // src/pages/memberInfo/MemberInfoComp.jsx
 
-import defaultAvatar from '../../common/images/logo2.png';
-import thumb1 from '../../common/images/forest1.png';
-import thumb2 from '../../common/images/forest2.png';
-import thumb3 from '../../common/images/forest3.png';
+import defaultAvatar from '../../../common/images/Logo2.png';
+import thumb1 from '../../../common/images/forest1.png';
+import thumb2 from '../../../common/images/forest2.png';
+import thumb3 from '../../../common/images/forest3.png';
 
 const PROFILE_STORAGE_KEY = 'travlyProfile';
 

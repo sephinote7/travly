@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+// import axios from 'axios';
+
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Autoplay } from 'swiper/modules';
 
@@ -16,16 +18,9 @@ import badge04 from '../../common/images/badge04.png';
 import badge05 from '../../common/images/badge05.png';
 import rightArrow from '../../common/images/rightArrow.png';
 
-// Spring API 연동을 위한 서비스 import
-import { getWeeklyTopBoards } from '../../util/boardService';
-
 export default function WeeklyBoardTopList() {
-  const [topBoards, setTopBoards] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  // 더미 데이터 (Spring API가 준비되지 않았을 때 사용)
-  const dummyBoards = [
+  // 더미 데이터 (나중에 DB 연동 시 주석 해제하고 사용)
+  const [topBoards] = useState([
     {
       id: 1,
       title: 'sadfsdafdsa08',
@@ -68,7 +63,7 @@ export default function WeeklyBoardTopList() {
       content: '서울의 숨겨진 명소들을 찾아다녔습니다...',
       tags: ['서울', '명소', '도시'],
     },
-  ];
+  ]);
 
   const badgeImages = {
     1: badge01,
@@ -78,76 +73,18 @@ export default function WeeklyBoardTopList() {
     5: badge05,
   };
 
-  // Spring API에서 데이터 가져오기
-  useEffect(() => {
-    const fetchTopBoards = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const result = await getWeeklyTopBoards();
-
-        if (result.success) {
-          // API 응답 데이터를 컴포넌트에서 사용하는 형식으로 변환
-          // Spring API 응답 형식에 맞게 조정 필요
-          setTopBoards(result.data || []);
-        } else {
-          // API 호출 실패 시 더미 데이터 사용
-          console.warn('API 호출 실패, 더미 데이터 사용:', result.error);
-          setTopBoards(dummyBoards);
-        }
-      } catch (err) {
-        console.error('데이터 로딩 중 오류 발생:', err);
-        setError(err.message);
-        // 에러 발생 시 더미 데이터 사용
-        setTopBoards(dummyBoards);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchTopBoards();
-  }, []); // 컴포넌트 마운트 시 한 번만 실행
-
-  // 로딩 중일 때 표시
-  if (isLoading) {
-    return (
-      <section className="w-full bg-white">
-        <div className="bg-yellow-400 py-4">
-          <div className="max-w-[1080px] mx-auto px-4 flex justify-between items-center">
-            <h2 className="text-xl font-semibold">
-              이번 주 <span className="text-blue-500">가장 많이 찾은 이야기</span> TOP 3
-            </h2>
-          </div>
-        </div>
-        <div className="bg-white py-8">
-          <div className="max-w-[1080px] mx-auto px-4 text-center">
-            <p className="text-gray-500">로딩 중...</p>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  // 에러 발생 시 표시
-  if (error && topBoards.length === 0) {
-    return (
-      <section className="w-full bg-white">
-        <div className="bg-yellow-400 py-4">
-          <div className="max-w-[1080px] mx-auto px-4 flex justify-between items-center">
-            <h2 className="text-xl font-semibold">
-              이번 주 <span className="text-blue-500">가장 많이 찾은 이야기</span> TOP 3
-            </h2>
-          </div>
-        </div>
-        <div className="bg-white py-8">
-          <div className="max-w-[1080px] mx-auto px-4 text-center">
-            <p className="text-red-500">데이터를 불러오는 중 오류가 발생했습니다.</p>
-          </div>
-        </div>
-      </section>
-    );
-  }
+  // -----------------------------
+  // 나중에 DB 연동 시 사용할 코드
+  // -----------------------------
+  // useEffect(() => {
+  //   axios
+  //     .get('http://localhost:8080/api/travly/board/top3')
+  //     .then((res) => {
+  //       setTopBoards(res.data);
+  //       console.log(res.data);
+  //     })
+  //     .catch((err) => console.error(err));
+  // }, []);
 
   return (
     <section className="w-full bg-white">

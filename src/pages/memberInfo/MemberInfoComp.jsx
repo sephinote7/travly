@@ -1,10 +1,12 @@
 // src/pages/memberInfo/MemberInfoComp.jsx
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../common/AuthStateContext';
+import { getMemberInfo } from '../../util/memberService';
+import { getFileUrl } from '../../util/fileService';
 
 // 이미지 경로 수정
-import defaultAvatar from '../../common/images/logo2.png';
+import defaultAvatar from '../../common/images/Logo2.png';
 import thumb1 from '../../common/images/forest1.png';
 import thumb2 from '../../common/images/forest2.png';
 import thumb3 from '../../common/images/forest3.png';
@@ -126,15 +128,23 @@ const bookmarkedPostsDummy = [
 
 function MemberInfoComp() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { userData } = useAuth();
-  const { name: userName, email: userEmail } = userData || {};
+  const { email: userEmail, memberId } = userData || {};
+
+  // URL 쿼리 파라미터에서 memberId 가져오기 (회원정보 수정 후 전달된 경우)
+  const queryParams = new URLSearchParams(location.search);
+  const memberIdFromQuery = queryParams.get('memberId');
 
   const [profile, setProfile] = useState({
-    nickname: userName || '닉네임',
+    nickname: null, // Spring API에서 가져온 데이터만 사용
     email: userEmail || '이메일@이메일.com',
     bio: '',
     profileImage: null,
   });
+
+  const [imageLoadError, setImageLoadError] = useState(false);
+  const [isMemberNotFound, setIsMemberNotFound] = useState(false);
 
   const [myPosts] = useState(myPostsDummy);
   const [bookmarkedPosts] = useState(bookmarkedPostsDummy);
@@ -143,7 +153,7 @@ function MemberInfoComp() {
     // userData가 없으면 초기화
     if (!userData?.isLoggedIn || !userEmail) {
       setProfile({
-        nickname: '닉네임',
+        nickname: null,
         email: '이메일@이메일.com',
         bio: '',
         profileImage: null,
@@ -151,49 +161,181 @@ function MemberInfoComp() {
       return;
     }
 
-    const saved = localStorage.getItem(PROFILE_STORAGE_KEY);
-    if (saved) {
+    // Spring API에서 프로필 정보 불러오기 (프로필 이미지 포함)
+    const loadProfileFromSpring = async () => {
       try {
-        const parsed = JSON.parse(saved);
-        // localStorage의 email이 현재 사용자의 email과 일치하는지 확인
-        if (parsed.email === userEmail) {
-          setProfile((prev) => ({
-            ...prev,
-            nickname: parsed.nickname || userName,
-            email: parsed.email || userEmail,
-            bio: parsed.bio || '',
-            profileImage: parsed.profileImage || null,
-          }));
-        } else {
-          // 이전 사용자 정보이므로 userData 사용하고 localStorage 클리어
-          localStorage.removeItem(PROFILE_STORAGE_KEY);
-          setProfile({
-            nickname: userName || '닉네임',
-            email: userEmail,
-            bio: '',
-            profileImage: null,
-          });
+        // 회원 정보 조회 시작 시 isMemberNotFound 초기화
+        setIsMemberNotFound(false);
+
+        // memberId 우선순위: URL 쿼리 파라미터 > userData.memberId > userData에서 가져온 memberId
+        let targetMemberId = memberIdFromQuery || memberId || userData?.memberId;
+        let triedAuthUuid = false;
+
+        console.log('🔄 프로필 정보 불러오기 시작:', {
+          memberIdFromQuery,
+          memberId,
+          userDataMemberId: userData?.memberId,
+          targetMemberId,
+          userDataId: userData?.id,
+        });
+
+        // memberId가 없으면 getMemberInfoByAuthUuid로 memberId 얻기
+        if (!targetMemberId && userData?.id) {
+          console.log('🔄 memberId가 없어 authUuid로 조회 시도...');
+          triedAuthUuid = true;
+          const { getMemberInfoByAuthUuid } = await import('../../util/memberService');
+          const authUuidResult = await getMemberInfoByAuthUuid(userData.id);
+          if (authUuidResult.success && authUuidResult.data) {
+            targetMemberId = authUuidResult.data.id;
+            console.log('✅ memberId 획득:', targetMemberId);
+          } else {
+            // 404 에러인 경우: 회원 정보가 아직 생성되지 않았을 수 있음
+            if (authUuidResult.status === 404) {
+              console.warn('⚠️ 회원 정보가 아직 생성되지 않았습니다. 회원정보 수정 페이지에서 프로필을 생성해주세요.');
+              setIsMemberNotFound(true);
+            } else {
+              console.warn('⚠️ authUuid로 회원 정보 조회 실패:', authUuidResult.error);
+            }
+          }
         }
-      } catch (err) {
-        console.error('프로필 불러오기 실패', err);
-        localStorage.removeItem(PROFILE_STORAGE_KEY);
+
+        // memberId가 있으면 Spring API로 프로필 정보 조회 (프로필 이미지 포함)
+        if (targetMemberId) {
+          console.log('🔄 프로필 데이터 불러오기 시작 (memberId):', targetMemberId);
+          const result = await getMemberInfo(targetMemberId);
+
+          if (result.success && result.data) {
+            const memberData = result.data;
+
+            // profileImage 객체를 URL로 변환
+            let profileImageUrl = null;
+            if (memberData.profileImage) {
+              console.log('🖼️ profileImage 객체:', JSON.stringify(memberData.profileImage, null, 2));
+
+              // getFileUrl 함수 사용 (가장 안정적)
+              // 파일 ID 우선 사용, 없으면 파일명 사용
+              profileImageUrl = getFileUrl(memberData.profileImage);
+
+              if (!profileImageUrl) {
+                console.error('❌ 이미지 URL을 생성할 수 없습니다. profileImage 구조:', memberData.profileImage);
+              } else {
+                // 캐시 방지를 위해 타임스탬프 추가
+                const separator = profileImageUrl.includes('?') ? '&' : '?';
+                profileImageUrl = `${profileImageUrl}${separator}t=${Date.now()}`;
+                console.log('🖼️ 최종 이미지 URL:', profileImageUrl);
+              }
+            } else {
+              console.log('⚠️ 프로필 이미지가 없습니다.');
+            }
+
+            console.log('✅ 프로필 데이터 불러오기 성공:', {
+              nickname: memberData.nickname,
+              profileImageUrl,
+              hasProfileImage: !!memberData.profileImage,
+            });
+
+            setProfile({
+              nickname: memberData.nickname || userData.nickname || null,
+              email: memberData.email || userEmail,
+              bio: memberData.introduction || '',
+              profileImage: profileImageUrl, // Spring API에서 가져온 프로필 이미지 URL
+            });
+            setImageLoadError(false); // 이미지 로드 에러 상태 초기화
+            setIsMemberNotFound(false); // 회원 정보를 찾았으므로 false로 설정
+            return;
+          } else {
+            console.warn('⚠️ getMemberInfo 실패:', result.error, 'status:', result.status);
+
+            // 404 에러이고 아직 authUuid로 시도하지 않았다면 다시 시도
+            if (result.status === 404 && !triedAuthUuid && userData?.id) {
+              console.log('🔄 memberId가 유효하지 않아 authUuid로 재시도...');
+              const { getMemberInfoByAuthUuid } = await import('../../util/memberService');
+              const authUuidResult = await getMemberInfoByAuthUuid(userData.id);
+              if (authUuidResult.success && authUuidResult.data) {
+                const newMemberId = authUuidResult.data.id;
+                console.log('✅ 새로운 memberId 획득:', newMemberId);
+
+                // 새로운 memberId로 다시 조회
+                const retryResult = await getMemberInfo(newMemberId);
+                if (retryResult.success && retryResult.data) {
+                  const memberData = retryResult.data;
+
+                  // profileImage 객체를 URL로 변환
+                  let profileImageUrl = null;
+                  if (memberData.profileImage) {
+                    console.log('🖼️ [재시도] profileImage 객체:', JSON.stringify(memberData.profileImage, null, 2));
+
+                    // getFileUrl 함수 사용 (가장 안정적)
+                    profileImageUrl = getFileUrl(memberData.profileImage);
+
+                    if (profileImageUrl) {
+                      // 캐시 방지를 위해 타임스탬프 추가
+                      const separator = profileImageUrl.includes('?') ? '&' : '?';
+                      profileImageUrl = `${profileImageUrl}${separator}t=${Date.now()}`;
+                      console.log('🖼️ [재시도] 최종 이미지 URL:', profileImageUrl);
+                    } else {
+                      console.error('❌ [재시도] 이미지 URL을 생성할 수 없습니다.');
+                    }
+                  }
+
+                  setProfile({
+                    nickname: memberData.nickname || userData.nickname || null,
+                    email: memberData.email || userEmail,
+                    bio: memberData.introduction || '',
+                    profileImage: profileImageUrl,
+                  });
+                  setImageLoadError(false);
+                  setIsMemberNotFound(false); // 회원 정보를 찾았으므로 false로 설정
+                  return;
+                }
+              } else {
+                if (authUuidResult.status === 404) {
+                  console.warn(
+                    '⚠️ 회원 정보가 아직 생성되지 않았습니다. 회원정보 수정 페이지에서 프로필을 생성해주세요.'
+                  );
+                }
+              }
+            }
+          }
+        }
+
+        // memberId를 얻지 못했거나 조회 실패 시
+        console.warn('⚠️ Spring API에서 프로필 정보를 불러올 수 없습니다.');
+        console.warn(
+          '💡 회원 정보가 아직 생성되지 않았을 수 있습니다. 회원정보 수정 페이지에서 프로필을 생성해주세요.'
+        );
+        setIsMemberNotFound(true); // 회원 정보를 찾지 못했으므로 true로 설정
         setProfile({
-          nickname: userName || '닉네임',
+          nickname: userData.nickname || '회원 정보 없음',
+          email: userEmail,
+          bio: '',
+          profileImage: null,
+        });
+        setImageLoadError(false); // 이미지 로드 에러 상태 초기화
+      } catch (error) {
+        console.error('❌ 프로필 정보 불러오기 실패:', error);
+        // 에러 발생 시에도 isMemberNotFound는 유지 (이미 설정되어 있을 수 있음)
+        setProfile({
+          nickname: userData.nickname || null,
           email: userEmail,
           bio: '',
           profileImage: null,
         });
       }
-    } else {
-      // localStorage에 없으면 userData 사용
-      setProfile({
-        nickname: userName || '닉네임',
-        email: userEmail,
-        bio: '',
-        profileImage: null,
-      });
-    }
-  }, [userName, userEmail, userData?.isLoggedIn]);
+    };
+
+    loadProfileFromSpring();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    userEmail,
+    userData?.isLoggedIn,
+    userData?.nickname,
+    userData?.memberId, // memberId가 변경되면 다시 불러오기
+    userData?.id,
+    location.pathname,
+    location.search, // 쿼리 파라미터 변경 감지
+    location.key,
+  ]);
 
   const handleProfileEdit = () => {
     navigate('/memberinfo/modify');
@@ -288,22 +430,71 @@ function MemberInfoComp() {
           {/* 상단 프로필 */}
           <section className="flex flex-col items-center text-center mb-16">
             <div className="w-40 h-40 rounded-full bg-black flex items-center justify-center mb-6 overflow-hidden">
-              {profile.profileImage ? (
-                <img src={profile.profileImage} alt="프로필 이미지" className="w-full h-full object-cover" />
+              {profile.profileImage && !imageLoadError ? (
+                <img
+                  src={profile.profileImage}
+                  alt="프로필 이미지"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    console.error('❌ 프로필 이미지 로드 실패');
+                    console.error('❌ 이미지 URL:', profile.profileImage);
+                    console.error('❌ 에러 이벤트:', e);
+                    console.error('❌ 이미지 요소:', e.target);
+
+                    // 네트워크 탭에서 확인할 수 있도록 URL 출력
+                    console.error('❌ 브라우저에서 다음 URL을 직접 열어보세요:', profile.profileImage);
+
+                    setImageLoadError(true);
+                    e.target.style.display = 'none';
+                    // 이미지 로드 실패 시 기본 아이콘 표시를 위해 부모 요소 확인
+                    const parent = e.target.parentElement;
+                    if (parent) {
+                      const defaultIcon = parent.querySelector('.default-icon');
+                      if (!defaultIcon) {
+                        const icon = document.createElement('span');
+                        icon.className = 'default-icon text-white text-6xl';
+                        icon.textContent = '👤';
+                        parent.appendChild(icon);
+                      }
+                    }
+                  }}
+                  onLoad={() => {
+                    console.log('✅ 프로필 이미지 로드 성공:', profile.profileImage);
+                    setImageLoadError(false);
+                    // 기본 아이콘 제거
+                    const parent = document.querySelector('.default-icon');
+                    if (parent) {
+                      parent.remove();
+                    }
+                  }}
+                />
               ) : (
                 <span className="text-white text-6xl">👤</span>
               )}
             </div>
 
-            <p className="text-[18px] font-semibold text-slate-900 mb-1">{profile.nickname}</p>
+            <p className="text-[18px] font-semibold text-slate-900 mb-1">
+              {profile.nickname || '회원 정보를 불러올 수 없습니다'}
+            </p>
             <p className="text-[13px] text-slate-600 mb-2">ID: {profile.email}</p>
+
+            {isMemberNotFound && (
+              <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-[12px] text-amber-800 mb-2">⚠️ 회원 정보가 아직 생성되지 않았습니다.</p>
+                <p className="text-[11px] text-amber-700">프로필을 생성하려면 아래 버튼을 클릭하세요.</p>
+              </div>
+            )}
 
             <button
               type="button"
               onClick={handleProfileEdit}
-              className="text-[13px] text-slate-800 underline underline-offset-2 hover:text-sky-600"
+              className={`text-[13px] underline underline-offset-2 ${
+                isMemberNotFound
+                  ? 'text-amber-600 hover:text-amber-700 font-semibold'
+                  : 'text-slate-800 hover:text-sky-600'
+              }`}
             >
-              [프로필 수정]
+              {isMemberNotFound ? '[프로필 생성하기]' : '[프로필 수정]'}
             </button>
           </section>
 

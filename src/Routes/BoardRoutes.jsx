@@ -1,10 +1,10 @@
 import { Route } from 'react-router-dom';
-import BoardComp from '../pages/board/BoardComp';
-import ListComp from '../pages/board/ListComp';
-import WriteComp from '../pages/board/WriteComp';
-import ModifyComp from '../pages/board/ModifyComp';
-import ViewComp from '../pages/board/ViewComp';
-import CommentComp from '../pages/board/CommentComp'; // 일반적으로 ViewComp 내부에 렌더링되지만, 라우팅을 분리할 경우
+import BoardComp from '../pages/home/board/BoardComp';
+import ListComp from '../pages/home/board/ListComp';
+import WriteComp from '../pages/home/board/WriteComp';
+import ModifyComp from '../pages/home/board/ModifyComp';
+import ViewComp from '../pages/home/board/ViewComp';
+import CommentComp from '../pages/home/board/CommentComp'; // 일반적으로 ViewComp 내부에 렌더링되지만, 라우팅을 분리할 경우
 
 // Board 관련 라우트 설정을 JSX 엘리먼트 형태로 반환
 const BoardRoutes = (

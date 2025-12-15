@@ -324,3 +324,58 @@ export const checkEmail = async (email) => {
     };
   }
 };
+
+/**
+ * authUuid로 회원 정보 조회
+ * GET /api/travly/member/by-auth-uuid/{authUuid}
+ *
+ * @param {string} authUuid - 인증 사용자 UUID (필수)
+ * @returns {Promise<{success: boolean, data?: Object, error?: string, status?: number}>}
+ *
+ * 성공 응답:
+ * - data: 회원 정보 객체 (id, name, nickname, email, introduction, badge, profileImage 등)
+ *
+ * 에러 응답:
+ * - status: 404 → 회원 정보를 찾을 수 없음
+ * - 기타 에러 → 네트워크 오류 등
+ */
+export const getMemberInfoByAuthUuid = async (authUuid) => {
+  // 입력값 검증
+  if (!authUuid || typeof authUuid !== 'string') {
+    return {
+      success: false,
+      error: '인증 사용자 UUID가 필요합니다.',
+      status: 400,
+    };
+  }
+
+  try {
+    const response = await apiClient.get(`/member/by-auth-uuid/${authUuid}`);
+
+    // 성공 응답: 회원 정보 객체 반환
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    // 404 에러 처리: 회원 정보를 찾을 수 없음
+    if (error.response?.status === 404) {
+      const errorMessage =
+        error.response?.data?.message || `authUuid [${authUuid}]에 해당하는 회원 정보를 찾을 수 없습니다.`;
+      console.error('회원 정보 조회 실패 (404):', errorMessage);
+      return {
+        success: false,
+        error: errorMessage,
+        status: 404,
+      };
+    }
+
+    // 기타 에러 처리
+    console.error('회원 정보 조회 실패:', error);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message || '회원 정보 조회 중 오류가 발생했습니다.',
+      status: error.response?.status,
+    };
+  }
+};

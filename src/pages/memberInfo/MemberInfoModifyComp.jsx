@@ -2,14 +2,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../common/AuthStateContext';
-import { checkNickname, createOrUpdateMember } from '../../util/memberService';
+import { checkNickname, createOrUpdateMember, getMemberInfo } from '../../util/memberService';
+import { uploadFiles, getFileUrl } from '../../util/fileService';
 import supabase from '../../util/supabaseClient';
 
 const PROFILE_STORAGE_KEY = 'travlyProfile';
 
 function MemberInfoModifyComp() {
   const navigate = useNavigate();
-  const { userData } = useAuth();
+  const { userData, updateUserDataFromSpring } = useAuth();
   const { name: userName, email: userEmail } = userData || {};
 
   // 기본 폼 상태
@@ -26,6 +27,8 @@ function MemberInfoModifyComp() {
 
   // 프로필 이미지
   const [profilePreview, setProfilePreview] = useState(null);
+  const [profileImageFile, setProfileImageFile] = useState(null); // 실제 파일 객체
+  const [uploadedFileId, setUploadedFileId] = useState(null); // 업로드된 파일 ID
   const fileInputRef = useRef(null);
 
   // 비밀번호 변경
@@ -108,8 +111,25 @@ function MemberInfoModifyComp() {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
 
+    // 파일 크기 검증 (예: 5MB 제한)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      alert('파일 크기는 5MB 이하여야 합니다.');
+      e.target.value = ''; // 파일 선택 초기화
+      return;
+    }
+
+    // 이미지 파일인지 확인
+    if (!file.type.startsWith('image/')) {
+      alert('이미지 파일만 업로드 가능합니다.');
+      e.target.value = ''; // 파일 선택 초기화
+      return;
+    }
+
     const imageUrl = URL.createObjectURL(file);
     setProfilePreview(imageUrl);
+    setProfileImageFile(file); // 실제 파일 객체 저장
+    setUploadedFileId(null); // 새 파일 선택 시 기존 업로드 ID 초기화
   };
 
   // 초기 데이터 로드
@@ -118,39 +138,50 @@ function MemberInfoModifyComp() {
       setEmail('email@email.com');
       setNickname('');
       setBio('');
+      setProfilePreview(null);
       return;
     }
 
     setEmail(userEmail);
-    const saved = localStorage.getItem(PROFILE_STORAGE_KEY);
-    if (saved) {
+
+    // Spring API에서 회원 정보 불러오기
+    const loadMemberData = async () => {
       try {
-        const parsed = JSON.parse(saved);
-        // localStorage의 email이 현재 사용자의 email과 일치하는지 확인
-        if (parsed.email === userEmail) {
-          setNickname(parsed.nickname || userName || '');
-          setBio(parsed.bio || '');
-          setProfilePreview(parsed.profileImage || null);
-        } else {
-          // 이전 사용자 정보이므로 localStorage 클리어하고 userData 사용
-          localStorage.removeItem(PROFILE_STORAGE_KEY);
-          setNickname(userName || '');
-          setBio('');
-          setProfilePreview(null);
+        // memberId가 있으면 Spring API로 조회
+        if (userData.memberId) {
+          const result = await getMemberInfo(userData.memberId);
+          if (result.success && result.data) {
+            const memberData = result.data;
+            setNickname(memberData.nickname || userName || '');
+            setBio(memberData.introduction || '');
+
+            // profileImage 객체를 URL로 변환 (썸네일 우선 사용)
+            if (memberData.profileImage) {
+              const profileImageUrl =
+                getFileUrl(memberData.profileImage, { thumbnail: true }) || getFileUrl(memberData.profileImage);
+              setProfilePreview(profileImageUrl);
+            } else {
+              setProfilePreview(null);
+            }
+            return;
+          }
         }
-      } catch (err) {
-        console.error('프로필 불러오기 실패', err);
-        localStorage.removeItem(PROFILE_STORAGE_KEY);
-        setNickname(userName || '');
+
+        // Spring API 조회 실패 시 userData 사용
+        setNickname(userData.nickname || userName || '');
+        setBio('');
+        setProfilePreview(null);
+      } catch (error) {
+        console.error('회원 정보 불러오기 실패:', error);
+        // 에러 발생 시 userData 사용
+        setNickname(userData.nickname || userName || '');
         setBio('');
         setProfilePreview(null);
       }
-    } else {
-      setNickname(userName || '');
-      setBio('');
-      setProfilePreview(null);
-    }
-  }, [userName, userEmail, userData?.isLoggedIn]);
+    };
+
+    loadMemberData();
+  }, [userName, userEmail, userData?.isLoggedIn, userData?.memberId, userData?.nickname]);
 
   // 제출 + 저장 + 이동
   const handleSubmit = async (e) => {
@@ -170,7 +201,7 @@ function MemberInfoModifyComp() {
       return;
     }
 
-    // 로딩 상태 표시 (선택사항)
+    // 로딩 상태 표시
     const submitButton = e.target.querySelector('button[type="submit"]');
     const originalText = submitButton?.textContent;
     if (submitButton) {
@@ -204,47 +235,124 @@ function MemberInfoModifyComp() {
           return;
         }
 
-        // 비밀번호 변경 성공
         console.log('✅ 비밀번호 변경 성공');
       }
 
-      // 2. Spring API로 회원정보 생성/수정 요청
+      // 2. 프로필 이미지 업로드 (파일이 선택된 경우)
+      let finalProfileImageFileId = null;
+
+      if (profileImageFile) {
+        console.log('📤 프로필 이미지 업로드 시작...');
+        const uploadResult = await uploadFiles(profileImageFile);
+
+        if (uploadResult.success && uploadResult.data && uploadResult.data.length > 0) {
+          // 업로드된 첫 번째 파일의 ID 사용
+          finalProfileImageFileId = uploadResult.data[0].id;
+          setUploadedFileId(finalProfileImageFileId);
+          console.log('✅ 프로필 이미지 업로드 성공, 파일 ID:', finalProfileImageFileId);
+        } else {
+          console.error('❌ 프로필 이미지 업로드 실패:', uploadResult.error);
+          alert('프로필 이미지 업로드에 실패했습니다: ' + (uploadResult.error || '알 수 없는 오류'));
+          if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = originalText || '수정 하기';
+          }
+          return;
+        }
+      }
+
+      // 3. Spring API로 회원정보 생성/수정 요청
+      console.log('📤 회원정보 저장 요청:', {
+        authUuid: userData.id,
+        name: userName || nickname || '',
+        nickname: nickname.trim(),
+        introduction: bio.trim() || '',
+        profileImageFileId: finalProfileImageFileId,
+      });
+
       const result = await createOrUpdateMember({
         authUuid: userData.id, // Supabase auth UUID
         name: userName || nickname || '', // 이름 (없으면 닉네임 사용)
         nickname: nickname.trim(),
         introduction: bio.trim() || '',
-        profileImageFileId: null, // TODO: 파일 업로드 후 받은 파일 ID로 변경
+        profileImageFileId: finalProfileImageFileId, // 업로드된 파일 ID 또는 null
+      });
+
+      console.log('📥 회원정보 저장 응답:', result);
+      console.log('📥 회원정보 저장 응답 상세:', {
+        success: result.success,
+        hasData: !!result.data,
+        data: result.data,
+        error: result.error,
+        status: result.status,
       });
 
       if (result.success) {
-        // 성공: localStorage에도 저장 (로컬 캐시용)
-        const profileData = {
-          nickname,
-          email: userEmail || email,
-          bio,
-          profileImage: profilePreview || null,
-        };
-        localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profileData));
-
         // 성공 메시지 표시
         const successMessage =
           password && password.trim() !== ''
             ? '비밀번호와 회원정보가 성공적으로 저장되었습니다.'
             : '회원정보가 성공적으로 저장되었습니다.';
+
+        console.log('✅ 회원정보 저장 성공:', result.data);
+        console.log('✅ 회원정보 저장 성공 상세:', {
+          id: result.data?.id,
+          nickname: result.data?.nickname,
+          name: result.data?.name,
+          hasUpdateUserDataFunction: !!updateUserDataFromSpring,
+        });
+
+        // 회원 정보 저장 후 userData 업데이트
+        if (result.data && updateUserDataFromSpring) {
+          console.log('🔄 userData 업데이트 시작...', {
+            memberData: result.data,
+            memberId: result.data.id,
+          });
+          const updated = await updateUserDataFromSpring(result.data);
+          if (updated) {
+            console.log('✅ userData 업데이트 완료');
+            // userData 업데이트 후 약간의 지연을 주어 상태가 반영되도록 함
+            await new Promise((resolve) => setTimeout(resolve, 200));
+            console.log('✅ 지연 완료, 페이지 이동 준비');
+          } else {
+            console.warn('⚠️ userData 업데이트 실패');
+          }
+        } else {
+          console.warn('⚠️ userData 업데이트를 건너뜁니다:', {
+            hasData: !!result.data,
+            hasUpdateFunction: !!updateUserDataFromSpring,
+          });
+        }
+
+        // 페이지 이동
         alert(successMessage);
-        navigate('/memberinfo');
+        console.log('🔄 프로필 화면으로 이동...', {
+          updatedMemberId: result.data?.id,
+          userDataMemberId: userData.memberId,
+        });
+
+        // memberId를 쿼리 파라미터로 전달하여 프로필 화면에서 사용할 수 있도록 함
+        const memberIdToPass = result.data?.id || userData.memberId;
+        if (memberIdToPass) {
+          navigate(`/memberinfo?memberId=${memberIdToPass}`, { replace: true });
+        } else {
+          navigate('/memberinfo', { replace: true });
+        }
       } else {
         // 실패: 에러 메시지 표시
         const errorMessage = result.error || '회원정보 저장에 실패했습니다.';
+        console.error('❌ 회원정보 저장 실패:', result);
         alert(errorMessage);
-        console.error('회원정보 저장 실패:', result);
+
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.textContent = originalText || '수정 하기';
+        }
       }
     } catch (error) {
-      console.error('회원정보 저장 예외:', error);
-      alert('회원정보 저장 중 오류가 발생했습니다.');
-    } finally {
-      // 버튼 상태 복원
+      console.error('❌ 회원정보 저장 예외:', error);
+      alert('회원정보 저장 중 오류가 발생했습니다: ' + (error.message || '알 수 없는 오류'));
+
       if (submitButton) {
         submitButton.disabled = false;
         submitButton.textContent = originalText || '수정 하기';

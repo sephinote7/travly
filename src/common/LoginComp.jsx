@@ -10,7 +10,7 @@ function LoginComp({ open, onClose, onLoginSuccess }) {
   const { login } = useAuth(); // ✅ Supabase 로그인 사용
 
   const [saveEmail, setSaveEmail] = useState(false);
-  const [email, setEmail] = useState(''); // ✅ Supabase는 이메일로 로그인
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState(''); // ✅ 에러 메시지
 
@@ -22,10 +22,7 @@ function LoginComp({ open, onClose, onLoginSuccess }) {
   };
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      setErrorMsg('이메일과 비밀번호를 입력해주세요.');
-      return;
-    }
+    if (!email || !password) return;
 
     setErrorMsg('');
     const result = await login({ email, password }); // ✅ Supabase 로그인 시도
