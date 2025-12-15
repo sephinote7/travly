@@ -17,7 +17,7 @@ export const boardRoutes = [
     <Route path="write" element={<WriteComp />} />
 
     {/* URL: /board/view/1, /board/view/2 등으로 파라미터 받음 */}
-    <Route path="view/:id" element={<ViewComp />} />
+    <Route path=":id" element={<ViewComp />} />
 
     {/* URL: /board/modify/1 */}
     <Route path="modify/:id" element={<ModifyComp />} />
