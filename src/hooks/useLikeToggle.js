@@ -1,34 +1,26 @@
 // src/hooks/useLikeToggle.js
 
 import { useState, useEffect, useCallback } from 'react';
-import apiClient from '../services/apiClient'; // ⭐ 백엔드 API 클라이언트 사용
+import apiClient from '../services/apiClient';
 import { useAuth } from '../common/AuthStateContext';
 
-// refetchBoardData: ViewComp에서 게시글 데이터를 다시 불러오는 함수를 받습니다.
-export const useLikeToggle = (postId, initialIsLiked, refetchBoardData) => {
+export const useLikeToggle = (boardId, initialIsLiked, refetchBoardData) => {
   const { userData } = useAuth();
   const isAuthenticated = userData.isLoggedIn;
-  const memberId = userData.memberId;
+  const authUuid = userData.authUuid; // ⬅️ 전역 상태에서 UUID 가져오기
 
-  // 좋아요 상태는 외부(ViewComp)에서 전달받은 초기 값으로 시작합니다.
   const [isLiked, setIsLiked] = useState(initialIsLiked);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 1. 초기 좋아요 상태 설정 (ViewComp에서 전달받은 값으로 초기화)
-  // ViewComp가 데이터를 가져올 때마다 이 값이 갱신됩니다.
   useEffect(() => {
     setIsLiked(initialIsLiked);
+    console.log('훅 상태:', { isAuthenticated, authUuid, boardId });
   }, [initialIsLiked]);
 
-  // 2. 좋아요 토글 로직 (백엔드 서버 API 호출)
   const toggleLike = useCallback(async () => {
-    // ID 및 인증 체크
-    if (
-      !isAuthenticated ||
-      typeof memberId !== 'number' ||
-      memberId <= 0 ||
-      !postId
-    ) {
+    // 인증 및 ID 체크
+    if (!isAuthenticated || !authUuid || !boardId) {
+      // ⭐ authUuid 체크
       console.warn('인증 또는 ID 정보 부족으로 좋아요 토글 불가');
       return;
     }
@@ -36,30 +28,30 @@ export const useLikeToggle = (postId, initialIsLiked, refetchBoardData) => {
     setIsLoading(true);
 
     try {
-      if (isLiked) {
-        // ⭐ 좋아요 취소: DELETE 메서드로 백엔드 API 호출
-        await apiClient.delete(`/like/${postId}`);
-        setIsLiked(false);
-      } else {
-        // ⭐ 좋아요 추가: POST 메서드로 백엔드 API 호출
-        await apiClient.post(`/like/${postId}`);
-        setIsLiked(true);
-      }
+      // ⭐ 1. 백엔드 API 경로/메서드에 맞춤 (POST /board/{boardId}/like)
+      const response = await apiClient.post(`/board/${boardId}/like`, null, {
+        headers: {
+          // ⭐ 2. 백엔드 인증 필터가 요구하는 헤더 추가
+          'X-AUTH-UUID': authUuid,
+        },
+      });
 
-      // ⭐ 핵심: 상태 변경 후, ViewComp에 전달받은 함수로 데이터를 다시 불러오도록 요청
+      // ⭐ 3. 성공 시, 로컬 상태만 토글 (백엔드가 등록/취소 처리했음)
+      setIsLiked((prev) => !prev);
+
+      // 4. 게시물 데이터를 다시 불러와 최신 좋아요 수 반영
       if (refetchBoardData) {
         refetchBoardData();
       }
+
+      alert(response.data); // 서버 응답 메시지 (등록됨/취소됨) 표시
     } catch (error) {
       console.error('좋아요 토글 실패:', error);
       alert('좋아요 처리 중 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated, memberId, postId, isLiked, refetchBoardData]);
-
-  // useLikeToggle은 이제 좋아요 상태를 '조회'하지 않습니다.
-  // '조회'는 백엔드가 처리하며, '상태 변경'만 클라이언트가 요청합니다.
+  }, [isAuthenticated, authUuid, boardId, isLiked, refetchBoardData]);
 
   return {
     isLiked,

@@ -191,7 +191,7 @@ export default function WeeklyBoardTopList() {
                           : noimage
                       }
                       alt={board.placeFileId}
-                      className="w-full md:w-[480px] h-[380px] object-cover rounded-xl hover:opacity-90 transition"
+                      className="w-full md:w-[480px] h-[380px] object-cover border rounded-[10px] border-neutral-500 hover:opacity-90 transition"
                     />
                   </div>
                 </Link>

@@ -99,7 +99,7 @@ export default function RecentBoardList() {
                       ? IMAGE_BASE_URL + board.thumbnailFilename
                       : noimage
                   }
-                  className="w-full h-[250px] object-cover"
+                  className="w-full h-[250px] object-cover border-b  border-neutral-500"
                   alt={board.title}
                 />
 
