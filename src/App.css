@@ -1,0 +1,63 @@
+/* ==== Travly 헤더 (1440 x 80 기준) ==== */
+
+.t-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px; /* 요구 높이 */
+  background: rgba(255, 255, 255, 0.96);
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.t-header-inner {
+  width: 1440px; /* 요구 폭 */
+  height: 80px;
+  padding: 0 32px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.t-logo {
+  font-size: 22px;
+  font-weight: 700;
+  color: #0f172a;
+  cursor: pointer;
+}
+
+/* 오른쪽 아이콘 영역 */
+.t-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* 아이콘 버튼 공통 */
+.t-icon-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: #f3f4f6;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #4b5563;
+  font-size: 16px; /* react-icons 크기 */
+}
+
+.t-icon-button:hover {
+  background: #e5e7eb;
+}
+
+/* 헤더 높이만큼 본문 밀기 (히어로가 가려지지 않게) */
+main {
+  padding-top: 80px;
+}
