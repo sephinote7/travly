@@ -4,7 +4,7 @@ import '../../styles/ViewComp.css';
 import apiClient from '../../services/apiClient';
 import { useKakaoMap } from '../../hooks/useKakaoMap';
 import { redrawMarkersAndPolyline } from '../../utils/mapDrawingUtils';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 // 🔥 마커 색상들 (원하는 대로 바꿔도 됨)
 const MARKER_COLORS = ['#3b82f6', '#10b981', '#f97316', '#ec4899', '#6366f1'];
@@ -78,6 +78,7 @@ function ViewComp() {
   const [rawBoard, setRawBoard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const { id } = useParams();
 
   // ⭐ 지도용 훅 & ref들
   const mapRef = useKakaoMap('map'); // #map 요소에 카카오맵 생성
@@ -105,7 +106,7 @@ function ViewComp() {
     async function fetchBoard() {
       try {
         // apiClient baseURL이 "http://localhost:8080/api" 라고 가정
-        const res = await apiClient.get('/board/11');
+        const res = await apiClient.get(`/board/${id}`);
         setRawBoard(res.data);
         const mapped = mapBoardApiToViewModel(res.data);
         setBoard(mapped);
@@ -117,7 +118,7 @@ function ViewComp() {
     }
 
     fetchBoard();
-  }, []);
+  }, [id]);
 
   // 2) Board 데이터 준비되면 지도에 마커 + 이동 경로 그리기
   useEffect(() => {

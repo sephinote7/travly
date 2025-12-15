@@ -1,4 +1,4 @@
-import { Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import BoardComp from '../pages/board/BoardComp';
 import ListComp from '../pages/board/ListComp';
 import WriteComp from '../pages/board/WriteComp';
@@ -21,11 +21,11 @@ const BoardRoutes = (
 
     {/* 3. 글 상세 보기 (ViewComp) */}
     {/* URL: /board/view?id=123 */}
-    <Route path="view" element={<ViewComp />} />
+    <Route path="view/:id" element={<ViewComp />} />
 
     {/* 4. 글 수정 (ModifyComp) - Header/Footer 숨김 대상 */}
     {/* URL: /board/modify?id=123*/}
-    <Route path="modify" element={<ModifyComp />} />
+    <Route path="modify/:id" element={<ModifyComp />} />
 
     {/* 5. 댓글 (CommentComp): Comment는 보통 ViewComp 내부에 렌더링되므로, 별도 라우트가 필요하지 않을 수 있지만, 
            만약 독립적인 페이지가 필요하다면 위처럼 정의합니다. 

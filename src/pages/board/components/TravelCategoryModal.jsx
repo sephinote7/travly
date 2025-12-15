@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import '../../../styles/TravelCategoryModal.css';
 import apiClient from '../../../services/apiClient';
 
-function TravelCategoryModal({ onNext, onClose }) {
+function TravelCategoryModal({ onNext, onClose, initialMeta }) {
   const [filters, setFilters] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -11,6 +11,14 @@ function TravelCategoryModal({ onNext, onClose }) {
   const [withWhoIds, setWithWhoIds] = useState([]);
   const [durationId, setDurationId] = useState(null);
   const [styleIds, setStyleIds] = useState([]);
+
+  useEffect(() => {
+    if (!initialMeta) return;
+
+    setWithWhoIds(initialMeta.withWhoIds || []);
+    setDurationId(initialMeta.durationId ?? null);
+    setStyleIds(initialMeta.styleIds || []);
+  }, [initialMeta]);
 
   useEffect(() => {
     (async () => {
@@ -28,16 +36,21 @@ function TravelCategoryModal({ onNext, onClose }) {
     })();
   }, []);
 
-  const withWhoFilter =
-    filters?.find((f) => f.id === 1 || f.code === 'WITH_WHO') || null;
-  const durationFilter =
-    filters?.find((f) => f.id === 2 || f.code === 'DURATION') || null;
-  const styleFilter =
-    filters?.find((f) => f.id === 3 || f.code === 'STYLE') || null;
+  const withWhoFilter = Array.isArray(filters)
+    ? filters.find((f) => f.id === 1 || f.code === 'WITH_WHO') ?? null
+    : null;
 
-  const withWhoOptions = withWhoFilter?.items || [];
-  const durationOptions = durationFilter?.items || [];
-  const styleOptions = styleFilter?.items || [];
+  const durationFilter = Array.isArray(filters)
+    ? filters.find((f) => f.id === 2 || f.code === 'DURATION') ?? null
+    : null;
+
+  const styleFilter = Array.isArray(filters)
+    ? filters.find((f) => f.id === 3 || f.code === 'STYLE') ?? null
+    : null;
+
+  const withWhoOptions = withWhoFilter?.items ?? [];
+  const durationOptions = durationFilter?.items ?? [];
+  const styleOptions = styleFilter?.items ?? [];
 
   const withWhoMax = withWhoFilter?.multiSelectCount ?? 3;
   const styleMax = styleFilter?.multiSelectCount ?? 5;
@@ -74,12 +87,7 @@ function TravelCategoryModal({ onNext, onClose }) {
       return;
     }
 
-    const filterItemIds = [
-      ...withWhoIds,
-      ...(durationId ? [durationId] : []),
-      ...styleIds,
-    ];
-
+    const filterItemIds = [...withWhoIds, durationId, ...styleIds];
     const meta = { withWhoIds, durationId, styleIds, filterItemIds };
 
     onNext && onNext(meta);

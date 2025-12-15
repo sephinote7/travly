@@ -167,6 +167,9 @@ export function useRoutePlanner(mapRef) {
 
     setDraggingIndex(null);
   };
+  const restoreSelectedPlaces = (places) => {
+    setSelectedPlaces(recalcSegmentDistances(places));
+  };
 
   /* -----------------------------
    * 4. 반환
@@ -178,6 +181,8 @@ export function useRoutePlanner(mapRef) {
     handleClearAll,
 
     setSelectedPlaces,
+    restoreSelectedPlaces,
+
     handlePlaceSelect,
     handleRemovePlace,
     handleDragStart,

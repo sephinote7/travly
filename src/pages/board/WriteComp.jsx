@@ -11,9 +11,10 @@ import TravelCategoryModal from './components/TravelCategoryModal';
 
 const TRIP_META_KEY = 'travly.tripMeta';
 
-function PlannerMap({ mode = 'write', initialData }) {
+function WriteComp({ mode = 'write', initialData }) {
   // ✅ F5 유지: localStorage에서 tripMeta 복원
   const [tripMeta, setTripMeta] = useState(() => {
+    if (mode === 'edit') return null; // ✅ edit에서는 로컬 무시 (서버만)
     try {
       const saved = localStorage.getItem(TRIP_META_KEY);
       return saved ? JSON.parse(saved) : null;
@@ -24,8 +25,15 @@ function PlannerMap({ mode = 'write', initialData }) {
 
   // ✅ F5 유지: 저장된 tripMeta가 있으면 모달 스킵
   const [showIntroModal, setShowIntroModal] = useState(() => {
-    return !localStorage.getItem(TRIP_META_KEY);
+    if (mode === 'edit') return true;
+    return true;
   });
+
+  useEffect(() => {
+    if (mode !== 'edit') return;
+    localStorage.removeItem(TRIP_META_KEY);
+    setTripMeta(null);
+  }, [mode]);
 
   // ============================================
   // 1. 지도 / 플래너 훅
@@ -128,33 +136,51 @@ function PlannerMap({ mode = 'write', initialData }) {
   // ============================================
   // 5. 수정 모드일 때 initialData 로 복원
   // ============================================
+  // ✅ edit일 때 카테고리(tripMeta)는 planner 준비와 무관하게 먼저 세팅
+  useEffect(() => {
+    if (mode === 'edit') {
+      localStorage.removeItem(TRIP_META_KEY);
+    }
+  }, [mode]);
+
   useEffect(() => {
     if (mode !== 'edit') return;
-    if (!initialData) return;
+    if (!initialData?.tripMeta) return;
+
+    setTripMeta(initialData.tripMeta);
+  }, [mode, initialData]);
+
+  useEffect(() => {
+    if (mode !== 'edit') return;
+    if (showIntroModal) return;
     if (!planner || !planner.setSelectedPlaces) return;
 
     if (initialData.tripMeta) {
-      setTripMeta(initialData.tripMeta);
       // (선택) 수정 페이지에서 tripMeta도 유지하려면 저장해도 됨
       // localStorage.setItem(TRIP_META_KEY, JSON.stringify(initialData.tripMeta));
       // setShowIntroModal(false);
     }
 
-    const restored = (initialData.items || []).map((item, idx) => ({
-      id: item.placeId,
-      routeId: `${item.placeId}-${idx}`,
-      order: item.order ?? idx + 1,
-      name: item.name,
-      addr: item.addr,
-      lat: item.lat,
-      lng: item.lng,
-      photos: item.photos || [],
-      title: item.title || '',
-      text: item.text || '',
-      source: 'db',
-    }));
+    const restored = (initialData.items || []).map((item, idx) => {
+      const routeId = `${item.placeId}-${idx}`;
+      const d = initialData.drafts?.[routeId]; // ✅ 여기!
 
-    planner.setSelectedPlaces(restored);
+      return {
+        id: item.placeId,
+        routeId,
+        order: item.order ?? idx + 1,
+        name: item.name,
+        addr: item.addr,
+        lat: item.lat,
+        lng: item.lng,
+        photos: d?.photos ?? item.photos ?? [],
+        title: d?.title ?? item.title ?? '',
+        text: d?.text ?? item.text ?? '',
+        source: 'db',
+      };
+    });
+
+    planner.restoreSelectedPlaces(restored);
 
     if (mapRef.current && window.kakao && initialData.center) {
       const { kakao } = window;
@@ -164,7 +190,7 @@ function PlannerMap({ mode = 'write', initialData }) {
       );
       mapRef.current.setCenter(pos);
     }
-  }, [mode, initialData, planner, mapRef]);
+  }, [mode, initialData, planner, mapRef, showIntroModal]);
 
   // ============================================
   // 7. 렌더링
@@ -185,9 +211,12 @@ function PlannerMap({ mode = 'write', initialData }) {
 
       {showIntroModal && (
         <TravelCategoryModal
+          initialMeta={tripMeta}
           onNext={(meta) => {
             setTripMeta(meta);
-            localStorage.setItem(TRIP_META_KEY, JSON.stringify(meta)); // ✅ 저장
+            if (mode !== 'edit') {
+              localStorage.setItem(TRIP_META_KEY, JSON.stringify(meta));
+            }
             setShowIntroModal(false);
           }}
           onClose={() => {
@@ -265,6 +294,8 @@ function PlannerMap({ mode = 'write', initialData }) {
             tripMeta={tripMeta}
             mode={mode === 'edit' ? 'edit' : 'create'}
             boardId={initialData?.boardId}
+            initialTripTitle={initialData?.tripTitle || ''}
+            initialDrafts={initialData?.drafts || {}}
           />
         </div>
       </div>
@@ -272,4 +303,4 @@ function PlannerMap({ mode = 'write', initialData }) {
   );
 }
 
-export default PlannerMap;
+export default WriteComp;
