@@ -1,5 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '../util/supabaseClient.js';
+// src/common/AuthStateContext.jsx (memberId 추출 강화)
+
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { supabase } from "../util/supabaseClient.js";
 
 const AuthContext = createContext(null);
 
@@ -44,17 +46,17 @@ export const AuthProvider = ({ children }) => {
       const hash = window.location.hash;
       const search = window.location.search;
       return (
-        hash.includes('access_token') ||
-        hash.includes('code=') ||
-        hash.includes('type=recovery') ||
-        search.includes('code=')
+        hash.includes("access_token") ||
+        hash.includes("code=") ||
+        hash.includes("type=recovery") ||
+        search.includes("code=")
       );
     };
 
     const checkSession = async () => {
       const { data, error } = await supabase.auth.getSession();
       if (error) {
-        console.error('getSession error:', error);
+        console.error("getSession error:", error);
         initialSessionChecked = true;
         return;
       }
@@ -72,7 +74,7 @@ export const AuthProvider = ({ children }) => {
 
           setTimeout(() => {
             const cleanUrl = window.location.pathname;
-            window.history.replaceState(null, '', cleanUrl);
+            window.history.replaceState(null, "", cleanUrl);
           }, 100);
         }
       }
@@ -92,14 +94,14 @@ export const AuthProvider = ({ children }) => {
 
           setUserData(extractUserData(session.user));
 
-          if (isOAuthRedirect || event === 'SIGNED_IN') {
+          if (isOAuthRedirect || event === "SIGNED_IN") {
             setIsUserCompOpen(true);
             setIsLoginModalOpen(false);
 
             if (isOAuthRedirect) {
               setTimeout(() => {
                 const cleanUrl = window.location.pathname;
-                window.history.replaceState(null, '', cleanUrl);
+                window.history.replaceState(null, "", cleanUrl);
               }, 100);
             }
           }
@@ -135,9 +137,11 @@ export const AuthProvider = ({ children }) => {
       password: password.trim(),
       options: {
         user_metadata: { nickname: nickname.trim() },
-        emailRedirectTo: 'http://localhost:5173',
+        emailRedirectTo: "http://localhost:5173",
       },
     });
+
+    console.log(error);
 
     if (error) return { success: false, error };
     return { success: true, data };
