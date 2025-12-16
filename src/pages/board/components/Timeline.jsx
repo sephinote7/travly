@@ -200,21 +200,23 @@ function Timeline({
     const places = selectedPlaces.map((p, idx) => {
       const routeId = getRouteId(p, idx);
       const draft = drafts[routeId] || {};
-
+      const baseId = String(p.id ?? '');
       return {
         title: draft.title ?? '',
         content: draft.text ?? '',
-        mapPlaceId: String(p.id ?? ''),
-        externalId: String(p.id ?? ''),
-        x: Number(p.lng ?? 0),
-        y: Number(p.lat ?? 0),
-        files: (draft.fileIds || []).map((id) => ({ fileId: id })),
+        mapPlaceId: `KakaoMap_${baseId}`,
+        externalId: `TourAPI_${baseId}`,
+        x: Number(p.lng ?? 0), // ✅ longitude
+        y: Number(p.lat ?? 0), // ✅ latitude
+        files: (draft.fileIds || []).map((id) => ({
+          fileId: id,
+        })),
       };
     });
 
     const payload = {
       title: tripTitle ?? '',
-      memberId: 1,
+
       filterItemIds: tripMeta?.filterItemIds || [],
       places,
     };
