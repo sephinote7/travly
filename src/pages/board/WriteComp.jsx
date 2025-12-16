@@ -13,26 +13,23 @@ const TRIP_META_KEY = 'travly.tripMeta';
 
 function WriteComp({ mode = 'write', initialData }) {
   // ✅ F5 유지: localStorage에서 tripMeta 복원
-  const [tripMeta, setTripMeta] = useState(() => {
-    if (mode === 'edit') return null; // ✅ edit에서는 로컬 무시 (서버만)
-    try {
-      const saved = localStorage.getItem(TRIP_META_KEY);
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
 
-  // ✅ F5 유지: 저장된 tripMeta가 있으면 모달 스킵
-  const [showIntroModal, setShowIntroModal] = useState(() => {
-    if (mode === 'edit') return true;
-    return true;
-  });
+  const [tripMeta, setTripMeta] = useState(null);
+
+  useEffect(() => {
+    if (mode === 'edit') return;
+
+    // ✅ write는 페이지 진입 시 항상 빈 상태
+    localStorage.removeItem(TRIP_META_KEY);
+    setTripMeta(null);
+    setShowIntroModal(true);
+  }, [mode]);
+
+  const [showIntroModal, setShowIntroModal] = useState(true);
 
   useEffect(() => {
     if (mode !== 'edit') return;
     localStorage.removeItem(TRIP_META_KEY);
-    setTripMeta(null);
   }, [mode]);
 
   // ============================================
@@ -95,8 +92,7 @@ function WriteComp({ mode = 'write', initialData }) {
     if (!ok) return;
 
     // 강한 리셋
-    localStorage.removeItem(TRIP_META_KEY);
-    setTripMeta(null);
+
     setShowIntroModal(true);
   };
 
@@ -190,7 +186,7 @@ function WriteComp({ mode = 'write', initialData }) {
       );
       mapRef.current.setCenter(pos);
     }
-  }, [mode, initialData, planner, mapRef, showIntroModal]);
+  }, [mode, initialData, showIntroModal]);
 
   // ============================================
   // 7. 렌더링
