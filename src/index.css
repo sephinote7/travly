@@ -1,3 +1,45 @@
+.h1 {
+  font-size: 48px;
+  font-weight: bold;
+  line-height: 3.5rem;
+}
+
+.h2 {
+  font-size: 36px;
+  font-weight: bold;
+  line-height: 2.5rem;
+}
+
+.h3 {
+  font-size: 30px;
+  font-weight: bold;
+  line-height: 2rem;
+}
+
+.h4 {
+  font-size: 24px;
+  font-weight: bold;
+  line-height: 1.8rem;
+}
+
+.h5 {
+  font-size: 20px;
+  font-weight: bold;
+  line-height: 1.6rem;
+}
+
+.p {
+  font-size: 16px;
+  line-height: 1.5rem;
+  color: #333333;
+}
+
+.ctext {
+  font-size: 14px;
+  line-height: 1rem;
+  color: #333333;
+}
+
 @import 'tailwindcss';
 
 @theme {
