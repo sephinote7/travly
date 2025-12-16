@@ -55,3 +55,5 @@ function mapBoardToPlannerInitialData(board, tripMeta) {
     drafts, // ✅ 타임라인 카드 내용(사진/제목/글) 복원용
   };
 }
+
+export default ModifyComp;
