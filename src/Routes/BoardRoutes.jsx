@@ -2,7 +2,7 @@ import React from 'react';
 import { Route } from 'react-router-dom';
 import BoardComp from '../pages/board/BoardComp';
 import ListComp from '../pages/board/ListComp';
-import WriteComp from '../pages/board/components/PlannerMap'; // ⭐ 이름이 PlannerMap이지만 WriteComp로 사용한다고 가정
+import WriteComp from '../pages/board/WriteComp'; // ⭐ 이름이 PlannerMap이지만 WriteComp로 사용한다고 가정
 import ModifyComp from '../pages/board/ModifyComp';
 import ViewComp from '../pages/board/ViewComp';
 
