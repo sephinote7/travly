@@ -1,12 +1,23 @@
 // src/hooks/useRoutePlanner.js
 import { useState, useRef, useEffect } from 'react';
 import { recalcSegmentDistances } from '../utils/distanceUtils';
+import '../styles/markers.css'; // ⭐ 마커 스타일
+
+// ⭐ 마커 색상 팔레트
+const MARKER_COLORS = ['#3b82f6', '#10b981', '#f97316', '#ec4899', '#6366f1'];
 
 /* =========================================
  *  번호 마커(1,2,3...) CustomOverlay 생성 함수
  * =======================================*/
 function createNumberMarker(position, number) {
-  const content = `<div class="route-marker">${number}</div>`;
+  const color = MARKER_COLORS[(number - 1) % MARKER_COLORS.length];
+
+  // ⭐ 클래스 이름을 map-route-marker 로 통일 (CSS랑 맞춰야 함)
+  const content = `
+    <div class="map-route-marker" style="background-color: ${color}">
+      ${number}
+    </div>
+  `;
 
   return new window.kakao.maps.CustomOverlay({
     position,
@@ -62,10 +73,15 @@ export function useRoutePlanner(mapRef) {
 
     // 장소별 번호 마커 배치
     selectedPlaces.forEach((p, idx) => {
-      const pos = new kakao.maps.LatLng(p.lat, p.lng);
+      // ⭐ lat/lng or y/x 둘 다 대응
+      const lat = p.lat ?? p.y;
+      const lng = p.lng ?? p.x;
+
+      if (lat == null || lng == null) return;
+
+      const pos = new kakao.maps.LatLng(lat, lng);
       path.push(pos);
 
-      // 첫 번째 인자는 position (LatLng), 두 번째는 번호
       const marker = createNumberMarker(pos, idx + 1);
       marker.setMap(map);
       newMarkers.push(marker);
@@ -151,6 +167,9 @@ export function useRoutePlanner(mapRef) {
 
     setDraggingIndex(null);
   };
+  const restoreSelectedPlaces = (places) => {
+    setSelectedPlaces(recalcSegmentDistances(places));
+  };
 
   /* -----------------------------
    * 4. 반환
@@ -162,6 +181,8 @@ export function useRoutePlanner(mapRef) {
     handleClearAll,
 
     setSelectedPlaces,
+    restoreSelectedPlaces,
+
     handlePlaceSelect,
     handleRemovePlace,
     handleDragStart,

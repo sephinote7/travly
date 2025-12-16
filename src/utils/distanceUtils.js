@@ -1,5 +1,4 @@
 // src/utils/distanceUtils.js
-
 // 두 좌표 사이 거리(km)
 export function calcDistanceKm(lat1, lng1, lat2, lng2) {
   const R = 6371;

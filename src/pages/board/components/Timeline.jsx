@@ -1,5 +1,5 @@
 // src/components/Timeline.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import '../../../styles/Timeline.css';
 import apiClient from '../../../services/apiClient';
 
@@ -27,7 +27,24 @@ function Timeline({
   const [drafts, setDrafts] = useState(initialDrafts);
   const [savedMap, setSavedMap] = useState({});
   const [photoIndexMap, setPhotoIndexMap] = useState({});
+  useEffect(() => {
+    console.log('[Timeline] selectedPlaces length:', selectedPlaces?.length);
+    console.log('[Timeline] first place:', selectedPlaces?.[0]);
+  }, [selectedPlaces]);
 
+  // 🔥 edit 모드에서 initial 값 동기화
+  useEffect(() => {
+    setTripTitle(initialTripTitle || '');
+  }, [initialTripTitle]);
+
+  useEffect(() => {
+    setDrafts(initialDrafts || {});
+  }, [initialDrafts]);
+
+  const getRouteId = (p, idx) => {
+    const baseId = p.placeId ?? p.id; // db 복원: placeId, 검색 추가: id
+    return p.routeId || `${baseId}-${idx}`;
+  };
   // =========================
   // 2. draft / 사진 관련 핸들러
   // =========================
@@ -181,24 +198,26 @@ function Timeline({
     }
 
     const places = selectedPlaces.map((p, idx) => {
-      const routeId = p.routeId || `${p.id}-${idx}`;
+      const routeId = getRouteId(p, idx);
       const draft = drafts[routeId] || {};
-
+      const baseId = String(p.id ?? '');
       return {
         title: draft.title ?? '',
         content: draft.text ?? '',
-        mapPlaceId: String(p.id ?? ''),
-        externalId: String(p.id ?? ''),
-        x: Number(p.lng ?? 0),
-        y: Number(p.lat ?? 0),
-        files: (draft.fileIds || []).map((id) => ({ fileId: id })),
+        mapPlaceId: `KakaoMap_${baseId}`,
+        externalId: `TourAPI_${baseId}`,
+        x: Number(p.lng ?? 0), // ✅ longitude
+        y: Number(p.lat ?? 0), // ✅ latitude
+        files: (draft.fileIds || []).map((id) => ({
+          fileId: id,
+        })),
       };
     });
 
     const payload = {
       title: tripTitle ?? '',
-      memberId: 1,
-      filterItemIds: [],
+
+      filterItemIds: tripMeta?.filterItemIds || [],
       places,
     };
 
@@ -287,7 +306,7 @@ function Timeline({
         )}
 
         {selectedPlaces.map((p, idx) => {
-          const routeId = p.routeId || `${p.id}-${idx}`;
+          const routeId = getRouteId(p, idx);
           const isExpanded = expandedRouteId === routeId;
 
           const draft = drafts[routeId] || {
@@ -322,7 +341,7 @@ function Timeline({
           };
 
           return (
-            <div key={`${p.id}-${idx}`} className="timeline-card">
+            <div key={getRouteId(p, idx)} className="timeline-card">
               <div
                 className={
                   draggingIndex === idx

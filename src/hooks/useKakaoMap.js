@@ -6,38 +6,46 @@ export function useKakaoMap(containerId) {
 
   useEffect(() => {
     const KAKAO_JS_KEY = import.meta.env.VITE_KAKAO_JAVASCRIPT_KEY;
-
     if (!KAKAO_JS_KEY) {
-      console.error(
-        '⚠ VITE_KAKAO_JAVASCRIPT_KEY 가 .env에 설정되어 있지 않습니다.'
-      );
+      console.error('⚠ Kakao JS key missing');
       return;
     }
 
-    const script = document.createElement('script');
-    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_JS_KEY}&autoload=false&libraries=services`;
-    script.onload = () => {
-      if (!window.kakao) {
-        console.error('window.kakao 없음');
-        return;
-      }
-
-      window.kakao.maps.load(() => {
+    const initMap = () => {
+      const tryInit = () => {
         const container = document.getElementById(containerId);
+
+        // ❗ DOM이 아직 준비 안 됐으면 재시도
         if (!container) {
-          console.error('지도 컨테이너를 찾을 수 없습니다:', containerId);
+          setTimeout(tryInit, 100);
           return;
         }
 
-        const options = {
+        // ⭐ 지도 객체 생성
+        const map = new window.kakao.maps.Map(container, {
           center: new window.kakao.maps.LatLng(37.5665, 126.978),
           level: 6,
-        };
-        const map = new window.kakao.maps.Map(container, options);
+        });
+
         mapRef.current = map;
-      });
+      };
+
+      tryInit();
     };
 
+    // 스크립트 이미 로드됨
+    if (window.kakao && window.kakao.maps) {
+      window.kakao.maps.load(initMap);
+      return;
+    }
+
+    // 처음 로드되는 경우
+    const script = document.createElement('script');
+    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_JS_KEY}&autoload=false&libraries=services`;
+    script.async = true;
+    script.onload = () => {
+      window.kakao.maps.load(initMap);
+    };
     document.head.appendChild(script);
   }, [containerId]);
 

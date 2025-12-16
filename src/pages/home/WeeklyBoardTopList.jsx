@@ -19,6 +19,8 @@ import badge05 from '../../common/images/badge05.png';
 import weeklyboard from './images/weeklyboard.png';
 import dayjs from 'dayjs';
 
+import apiClient from '../../services/apiClient';
+
 export default function WeeklyBoardTopList() {
   const [topBoards, setTopBoards] = useState([]);
 
@@ -32,15 +34,20 @@ export default function WeeklyBoardTopList() {
     5: badge05,
   };
 
+  const IMAGE_BASE_URL = 'http://localhost:8080/api/travly/file/id/';
+  const IMAGE_THUMBNAIL_URL = 'http://localhost:8080/api/travly/file/';
+
   // -----------------------------
   // 1) Spring API 연동
   // -----------------------------
   useEffect(() => {
-    axios
-      .get('http://localhost:8080/api/travly/board/top3')
+    apiClient
+      .get('/board?size=3&page=0&orderby=like') // 🎯 API 경로 확인
       .then((res) => {
-        setTopBoards(res.data);
-        console.log(res.data);
+        const boardList = res.data.content || [];
+
+        setTopBoards(boardList);
+        console.log('WeeklyBoard', boardList);
       })
       .catch((err) => console.error(err));
   }, []);
@@ -57,7 +64,7 @@ export default function WeeklyBoardTopList() {
             TOP 3
           </h2>
           <Link
-            to="/board"
+            to="/board?size=10&page=0&orderby=like"
             className="font-bold text-sky-400 hover:text-sky-900"
           >
             + 이번 주 인기 여행기 더 보기
@@ -100,7 +107,7 @@ export default function WeeklyBoardTopList() {
                       </div>
 
                       {/* Date */}
-                      <p className="text-gray-500 ctext mb-4 ms-auto">
+                      <p className="text-gray-500 p mb-4 ms-auto">
                         {dayjs(board.createdAt).format('YYYY.MM.DD | HH:mm')}
                       </p>
 
@@ -119,13 +126,19 @@ export default function WeeklyBoardTopList() {
                       >
                         <div className="flex items-center gap-5 mb-4 ms-auto">
                           <img
-                            src={board.profileImg ?? testprofile}
+                            src={
+                              board.memberThumbail
+                                ? IMAGE_THUMBNAIL_URL + board.memberThumbail
+                                : testprofile
+                            }
                             alt="profile"
                             className="w-[70px] h-[70px] rounded-full object-cover hover:opacity-80 transition ms-auto block border border-neutral-500"
                           />
 
                           <div className="flex  gap-3 flex-col">
-                            <p className="h5 text-right">{board.memberName}</p>
+                            <p className="h5 text-right">
+                              {board.memberNickname}
+                            </p>
                             <img
                               src={badgeImages[board.badgeId]}
                               alt="badge"
@@ -138,7 +151,7 @@ export default function WeeklyBoardTopList() {
                       {/* Tags */}
                       <div className="ctext mb-4 line-clamp-1">
                         {/* 1. 태그 목록을 최대 5개까지 잘라냅니다. */}
-                        {board.tags?.slice(0, 5).map((tag, idx) => (
+                        {board.filterItemNames?.slice(0, 5).map((tag, idx) => (
                           <span key={idx} className="mr-2">
                             #{tag}
                           </span>
@@ -152,7 +165,7 @@ export default function WeeklyBoardTopList() {
 
                       {/* Content */}
                       <p className="p line-clamp-3 h-auto mb-6 hover:underline">
-                        {board.content ?? ''}
+                        {board.placeContent ?? ''}
                       </p>
 
                       {/* Like + View */}
@@ -172,9 +185,13 @@ export default function WeeklyBoardTopList() {
                     {/* --- Right Image (클릭 시 board 상세로 이동) --- */}
                     <img
                       // ⭐ 수정: board.cardImg 자체가 완전한 URL입니다.
-                      src={board.cardImg || noimage}
-                      alt={board.cardImg}
-                      className="w-full md:w-[480px] h-[380px] object-cover rounded-xl hover:opacity-90 transition"
+                      src={
+                        board.placeFileId
+                          ? IMAGE_BASE_URL + board.placeFileId
+                          : noimage
+                      }
+                      alt={board.placeFileId}
+                      className="w-full md:w-[480px] h-[380px] object-cover border rounded-[10px] border-neutral-500 hover:opacity-90 transition"
                     />
                   </div>
                 </Link>
