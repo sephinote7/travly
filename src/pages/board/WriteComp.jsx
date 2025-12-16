@@ -190,7 +190,7 @@ function WriteComp({ mode = 'write', initialData }) {
       );
       mapRef.current.setCenter(pos);
     }
-  }, [mode, initialData, planner, mapRef, showIntroModal]);
+  }, [mode, initialData, showIntroModal]);
 
   // ============================================
   // 7. 렌더링
