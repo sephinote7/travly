@@ -3,6 +3,7 @@
 // 😆 CSS 한 번만 임포트해두면 route-marker 스타일을 쓸 수 있다.
 import '../styles/markers.css';
 
+const MARKER_COLORS = ['#3b82f6', '#10b981', '#f97316', '#ec4899', '#6366f1'];
 // mapRef: useKakaoMap에서 받은 ref
 // markersRef: 현재 지도에 표시된 마커들 저장용 ref (배열)
 // polylineRef: 현재 표시된 polyline 저장용 ref
@@ -12,7 +13,7 @@ export function redrawMarkersAndPolyline(
   placesArray,
   markersRef,
   polylineRef,
-  markerColors
+  markerColors = MARKER_COLORS
 ) {
   const { kakao } = window;
   if (!kakao || !mapRef.current) return placesArray;
@@ -40,7 +41,7 @@ export function redrawMarkersAndPolyline(
   }
 
   const path = [];
-
+  const colors = markerColors || MARKER_COLORS;
   // 3) 새 마커 + path 생성
   placesArray.forEach((p, idx) => {
     const order = idx + 1;

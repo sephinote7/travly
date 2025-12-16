@@ -3,6 +3,10 @@ import { useParams } from 'react-router-dom';
 import apiClient from '../../services/apiClient';
 import LikeButtonComp from '../../common/LikeButtonComp'; // ⭐ 분리된 컴포넌트 임포트
 import '../../styles/ViewComp.css';
+import apiClient from '../../services/apiClient';
+import { useKakaoMap } from '../../hooks/useKakaoMap';
+import { redrawMarkersAndPolyline } from '../../utils/mapDrawingUtils';
+import { useNavigate, useParams } from 'react-router-dom';
 
 function ViewComp() {
   const { id } = useParams();

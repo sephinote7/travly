@@ -33,6 +33,8 @@ export function useTripPlanner(mapRef) {
     handlePageChange: region.handlePageChange,
 
     // --- 경로/타임라인 관련 ---
+    restoreSelectedPlaces: route.restoreSelectedPlaces,
+    setSelectedPlaces: route.setSelectedPlaces,
     selectedPlaces: route.selectedPlaces,
     draggingIndex: route.draggingIndex,
     totalDistance: route.totalDistance,
