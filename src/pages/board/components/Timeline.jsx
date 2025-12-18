@@ -1,5 +1,5 @@
 // src/components/Timeline.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import '../../../styles/Timeline.css';
 import apiClient from '../../../services/apiClient';
 
@@ -24,6 +24,9 @@ function Timeline({
   // 1. 상태
   // =========================
   const [tripTitle, setTripTitle] = useState(initialTripTitle);
+
+   const hydratedRef = useRef(false);
+
   const [drafts, setDrafts] = useState(initialDrafts);
   const [savedMap, setSavedMap] = useState({});
   const [photoIndexMap, setPhotoIndexMap] = useState({});
@@ -38,12 +41,16 @@ function Timeline({
   }, [initialTripTitle]);
 
   useEffect(() => {
-    setDrafts(initialDrafts || {});
-  }, [initialDrafts]);
+    if (mode !== 'edit') return;
+   if (!boardId) return;
+   if (hydratedRef.current) return;
+   setDrafts(initialDrafts || {});
+   hydratedRef.current = true;
+ }, [mode, boardId]);
 
   const getRouteId = (p, idx) => {
     const baseId = p.placeId ?? p.id; // db 복원: placeId, 검색 추가: id
-    return p.routeId || `${baseId}-${idx}`;
+    return p.routeId || String(baseId);
   };
   // =========================
   // 2. draft / 사진 관련 핸들러
