@@ -1,23 +1,23 @@
 // src/components/PlannerMap.jsx (지금 너 파일에 있는 PlannerMap 부분)
-import { useState, useEffect, useRef } from 'react';
-import { useKakaoMap } from '../../hooks/useKakaoMap';
-import { useTripPlanner } from '../../hooks/useTripPlanner';
-import SearchPanel from './components/SearchPanel';
-import Timeline from './components/Timeline';
-import PlaceDetailPanel from './components/PlaceDetailPanel';
-import { fetchTourPlaceDetail } from '../../services/tourApiService';
-import '../../styles/PlannerMap.css';
-import TravelCategoryModal from './components/TravelCategoryModal';
+import { useState, useEffect, useRef } from "react";
+import { useKakaoMap } from "../../hooks/useKakaoMap";
+import { useTripPlanner } from "../../hooks/useTripPlanner";
+import SearchPanel from "./components/SearchPanel";
+import Timeline from "./components/Timeline";
+import PlaceDetailPanel from "./components/PlaceDetailPanel";
+import { fetchTourPlaceDetail } from "../../services/tourApiService";
+import "../../styles/PlannerMap.css";
+import TravelCategoryModal from "./components/TravelCategoryModal";
 
-const TRIP_META_KEY = 'travly.tripMeta';
+const TRIP_META_KEY = "travly.tripMeta";
 
-function WriteComp({ mode = 'write', initialData }) {
+function WriteComp({ mode = "write", initialData }) {
   // ✅ F5 유지: localStorage에서 tripMeta 복원
 
   const [tripMeta, setTripMeta] = useState(null);
 
   useEffect(() => {
-    if (mode === 'edit') return;
+    if (mode === "edit") return;
 
     // ✅ write는 페이지 진입 시 항상 빈 상태
     localStorage.removeItem(TRIP_META_KEY);
@@ -28,14 +28,14 @@ function WriteComp({ mode = 'write', initialData }) {
   const [showIntroModal, setShowIntroModal] = useState(true);
 
   useEffect(() => {
-    if (mode !== 'edit') return;
+    if (mode !== "edit") return;
     localStorage.removeItem(TRIP_META_KEY);
   }, [mode]);
 
   // ============================================
   // 1. 지도 / 플래너 훅
   // ============================================
-  const mapRef = useKakaoMap('map');
+  const mapRef = useKakaoMap("map");
   const planner = useTripPlanner(mapRef);
 
   // ============================================
@@ -74,7 +74,7 @@ function WriteComp({ mode = 'write', initialData }) {
     if (!activePlace) return;
 
     if (planner.selectedPlaces.length >= 10) {
-      alert('여행지는 최대 10개까지만 선택할 수 있어요!');
+      alert("여행지는 최대 10개까지만 선택할 수 있어요!");
       return;
     }
     planner.handlePlaceSelect(activePlace);
@@ -88,7 +88,7 @@ function WriteComp({ mode = 'write', initialData }) {
 
   // ✅ ← 버튼: confirm + 강한 리셋 후 카테고리로
   const handleBackToCategory = () => {
-    const ok = window.confirm('카테고리로 돌아가시겠습니까?');
+    const ok = window.confirm("카테고리로 돌아가시겠습니까?");
     if (!ok) return;
 
     // 강한 리셋
@@ -100,7 +100,7 @@ function WriteComp({ mode = 'write', initialData }) {
   // 4. TourAPI 상세 정보 불러오기
   // ============================================
   useEffect(() => {
-    if (!activePlace || activePlace.source !== 'tour') {
+    if (!activePlace || activePlace.source !== "tour") {
       setActiveDetail(null);
       setDetailError(null);
       return;
@@ -120,7 +120,7 @@ function WriteComp({ mode = 'write', initialData }) {
 
         if (!cancelled) setActiveDetail(detail);
       } catch (err) {
-        if (!cancelled) setDetailError(err.message || '상세 조회 실패');
+        if (!cancelled) setDetailError(err.message || "상세 조회 실패");
       } finally {
         if (!cancelled) setDetailLoading(false);
       }
@@ -134,20 +134,20 @@ function WriteComp({ mode = 'write', initialData }) {
   // ============================================
   // ✅ edit일 때 카테고리(tripMeta)는 planner 준비와 무관하게 먼저 세팅
   useEffect(() => {
-    if (mode === 'edit') {
+    if (mode === "edit") {
       localStorage.removeItem(TRIP_META_KEY);
     }
   }, [mode]);
 
   useEffect(() => {
-    if (mode !== 'edit') return;
+    if (mode !== "edit") return;
     if (!initialData?.tripMeta) return;
 
     setTripMeta(initialData.tripMeta);
   }, [mode, initialData]);
 
   useEffect(() => {
-    if (mode !== 'edit') return;
+    if (mode !== "edit") return;
     if (showIntroModal) return;
     if (!planner || !planner.setSelectedPlaces) return;
 
@@ -170,9 +170,9 @@ function WriteComp({ mode = 'write', initialData }) {
         lat: item.lat,
         lng: item.lng,
         photos: d?.photos ?? item.photos ?? [],
-        title: d?.title ?? item.title ?? '',
-        text: d?.text ?? item.text ?? '',
-        source: 'db',
+        title: d?.title ?? item.title ?? "",
+        text: d?.text ?? item.text ?? "",
+        source: "db",
       };
     });
 
@@ -199,7 +199,7 @@ function WriteComp({ mode = 'write', initialData }) {
           type="button"
           className="tcm-global-back-btn"
           onClick={handleBackToCategory}
-          style={{ position: 'fixed', top: 12, left: 12, zIndex: 9999 }}
+          style={{ position: "fixed", top: 12, left: 12, zIndex: 9999 }}
         >
           ←
         </button>
@@ -210,7 +210,7 @@ function WriteComp({ mode = 'write', initialData }) {
           initialMeta={tripMeta}
           onNext={(meta) => {
             setTripMeta(meta);
-            if (mode !== 'edit') {
+            if (mode !== "edit") {
               localStorage.setItem(TRIP_META_KEY, JSON.stringify(meta));
             }
             setShowIntroModal(false);
@@ -263,14 +263,14 @@ function WriteComp({ mode = 'write', initialData }) {
           className="timeline-toggle-btn"
           onClick={toggleTimeline}
         >
-          {isTimelineOpen ? '타임라인 닫기' : '타임라인 열기'}
+          {isTimelineOpen ? "타임라인 닫기" : "타임라인 열기"}
         </button>
 
         <div
           className={`timeline-sidebar ${
             isTimelineOpen
-              ? 'timeline-sidebar--open'
-              : 'timeline-sidebar--closed'
+              ? "timeline-sidebar--open"
+              : "timeline-sidebar--closed"
           }`}
         >
           <Timeline
@@ -288,9 +288,9 @@ function WriteComp({ mode = 'write', initialData }) {
               setExpandedRouteId(null);
             }}
             tripMeta={tripMeta}
-            mode={mode === 'edit' ? 'edit' : 'create'}
+            mode={mode === "edit" ? "edit" : "create"}
             boardId={initialData?.boardId}
-            initialTripTitle={initialData?.tripTitle || ''}
+            initialTripTitle={initialData?.tripTitle || ""}
             initialDrafts={initialData?.drafts || {}}
           />
         </div>

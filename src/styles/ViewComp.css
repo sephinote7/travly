@@ -78,7 +78,15 @@
 
 /* 제목 / 작성자 */
 .view-box-header {
-  margin-bottom: 18px;
+  .view-box-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "back back"
+      "title writer"
+      "meta  writer";
+    row-gap: 6px;
+  }
 }
 
 .view-back-link {
@@ -151,6 +159,13 @@
   display: flex;
   gap: 10px;
   margin-left: auto; /* ✅ 닉네임 줄 오른쪽 끝 */
+}
+.view-actions-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid #f1f5f9;
 }
 
 /* ✅ 버튼 100*48 고정 */
