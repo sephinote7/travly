@@ -5,11 +5,7 @@ import supabase from './supabaseClient';
  * 프로필 조회
  */
 export const getProfile = async (userId) => {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .single();
+  const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
 
   if (error) {
     console.error('프로필 조회 실패:', error);
@@ -70,10 +66,7 @@ export const updateProfile = async (userId, updates) => {
  * 닉네임 중복 확인
  */
 export const checkNicknameAvailable = async (nickname, currentUserId = null) => {
-  let query = supabase
-    .from('profiles')
-    .select('id, nickname')
-    .eq('nickname', nickname);
+  let query = supabase.from('profiles').select('id, nickname').eq('nickname', nickname);
 
   // 현재 사용자의 닉네임은 제외 (수정 시 자신의 닉네임은 사용 가능)
   if (currentUserId) {
@@ -89,10 +82,4 @@ export const checkNicknameAvailable = async (nickname, currentUserId = null) => 
 
   return { available: data.length === 0 };
 };
-
-
-
-
-
-
 

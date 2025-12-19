@@ -223,10 +223,16 @@ export const createOrUpdateMember = async (memberData) => {
     profileImageFileId: profileImageFileId || null,
   };
 
+  // 디버깅: API 요청 데이터 확인
+  console.log('📤 API 요청 데이터:', requestBody);
+
   try {
     // POST 메서드로 요청 (UPSERT: 없으면 생성, 있으면 수정)
     // Spring API는 @PostMapping을 사용하므로 POST 메서드 사용
     const response = await apiClient.post('/member', requestBody);
+
+    // 디버깅: API 응답 확인
+    console.log('📥 API 응답 데이터:', response.data);
 
     // 성공 응답: 회원 정보 객체 반환
     return {
@@ -250,6 +256,63 @@ export const createOrUpdateMember = async (memberData) => {
     return {
       success: false,
       error: error.response?.data?.message || error.message || '회원정보 생성/수정 중 오류가 발생했습니다.',
+      status: error.response?.status,
+    };
+  }
+};
+
+/**
+ * authUuid로 회원 정보 조회
+ * GET /api/travly/member/by-auth/{authUuid}
+ *
+ * @param {string} authUuid - 인증 사용자 UUID (필수)
+ * @returns {Promise<{success: boolean, data?: Object, error?: string, status?: number}>}
+ *
+ * 성공 응답:
+ * - data: 회원 정보 객체 (id, nickname, email, introduction, badge, profileImage 등)
+ *
+ * 에러 응답:
+ * - status: 400 → 존재하지 않는 authUuid 또는 Member
+ * - 기타 에러 → 네트워크 오류 등
+ */
+export const getMemberInfoByAuthUuid = async (authUuid) => {
+  // 입력값 검증
+  if (!authUuid || typeof authUuid !== 'string') {
+    return {
+      success: false,
+      error: '인증 사용자 UUID가 필요합니다.',
+      status: 400,
+    };
+  }
+
+  try {
+    // 회원 정보 조회
+    // 현재 로그인한 사용자의 정보를 가져오는 엔드포인트 사용
+    // JWT 토큰에서 자동으로 현재 사용자를 인식
+    const response = await apiClient.get(`/member`);
+
+    // 성공 응답: 회원 정보 객체 반환
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    // 400 에러 처리: 존재하지 않는 authUuid 또는 Member
+    if (error.response?.status === 400) {
+      const errorMessage = error.response?.data?.message || `회원 정보를 찾을 수 없습니다: ${authUuid}`;
+      console.error('회원 정보 조회 실패 (400):', errorMessage);
+      return {
+        success: false,
+        error: errorMessage,
+        status: 400,
+      };
+    }
+
+    // 기타 에러 처리
+    console.error('회원 정보 조회 실패:', error);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message || '회원 정보 조회 중 오류가 발생했습니다.',
       status: error.response?.status,
     };
   }
@@ -320,61 +383,6 @@ export const checkEmail = async (email) => {
     return {
       success: false,
       error: error.response?.data?.message || error.message || '이메일 중복 확인 중 오류가 발생했습니다.',
-      status: error.response?.status,
-    };
-  }
-};
-
-/**
- * authUuid로 회원 정보 조회
- * GET /api/travly/member/by-auth-uuid/{authUuid}
- *
- * @param {string} authUuid - 인증 사용자 UUID (필수)
- * @returns {Promise<{success: boolean, data?: Object, error?: string, status?: number}>}
- *
- * 성공 응답:
- * - data: 회원 정보 객체 (id, name, nickname, email, introduction, badge, profileImage 등)
- *
- * 에러 응답:
- * - status: 404 → 회원 정보를 찾을 수 없음
- * - 기타 에러 → 네트워크 오류 등
- */
-export const getMemberInfoByAuthUuid = async (authUuid) => {
-  // 입력값 검증
-  if (!authUuid || typeof authUuid !== 'string') {
-    return {
-      success: false,
-      error: '인증 사용자 UUID가 필요합니다.',
-      status: 400,
-    };
-  }
-
-  try {
-    const response = await apiClient.get(`/member/by-auth-uuid/${authUuid}`);
-
-    // 성공 응답: 회원 정보 객체 반환
-    return {
-      success: true,
-      data: response.data,
-    };
-  } catch (error) {
-    // 404 에러 처리: 회원 정보를 찾을 수 없음
-    if (error.response?.status === 404) {
-      const errorMessage =
-        error.response?.data?.message || `authUuid [${authUuid}]에 해당하는 회원 정보를 찾을 수 없습니다.`;
-      console.error('회원 정보 조회 실패 (404):', errorMessage);
-      return {
-        success: false,
-        error: errorMessage,
-        status: 404,
-      };
-    }
-
-    // 기타 에러 처리
-    console.error('회원 정보 조회 실패:', error);
-    return {
-      success: false,
-      error: error.response?.data?.message || error.message || '회원 정보 조회 중 오류가 발생했습니다.',
       status: error.response?.status,
     };
   }

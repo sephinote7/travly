@@ -161,33 +161,102 @@ function MemberInfoComp() {
       return;
     }
 
+    // location.state에서 업데이트된 데이터 확인 (수정 페이지에서 전달된 경우)
+    const updatedMemberData = location.state?.updatedMemberData;
+    if (updatedMemberData) {
+      console.log('✅ 수정 페이지에서 전달된 업데이트된 데이터 사용:', updatedMemberData);
+
+      // memberId를 localStorage에 저장
+      if (updatedMemberData.id) {
+        localStorage.setItem('memberId', updatedMemberData.id.toString());
+        console.log('✅ memberId 저장됨 (from updatedMemberData):', updatedMemberData.id);
+      }
+
+      // profileImage 객체를 URL로 변환
+      let profileImageUrl = null;
+      if (updatedMemberData.profileImage) {
+        profileImageUrl = getFileUrl(updatedMemberData.profileImage);
+        if (profileImageUrl) {
+          // 캐시 방지를 위해 타임스탬프 추가
+          const separator = profileImageUrl.includes('?') ? '&' : '?';
+          profileImageUrl = `${profileImageUrl}${separator}t=${Date.now()}`;
+        }
+      }
+
+      setProfile({
+        nickname: updatedMemberData.nickname || userData.nickname || null,
+        email: updatedMemberData.email || userEmail,
+        bio: updatedMemberData.introduction || '',
+        profileImage: profileImageUrl,
+      });
+      setImageLoadError(false);
+      setIsMemberNotFound(false);
+
+      // location.state를 초기화하여 다음 렌더링 시 API 호출하도록 함
+      window.history.replaceState({}, document.title);
+      return;
+    }
+
     // Spring API에서 프로필 정보 불러오기 (프로필 이미지 포함)
     const loadProfileFromSpring = async () => {
       try {
         // 회원 정보 조회 시작 시 isMemberNotFound 초기화
         setIsMemberNotFound(false);
 
-        // memberId 우선순위: URL 쿼리 파라미터 > userData.memberId > userData에서 가져온 memberId
-        let targetMemberId = memberIdFromQuery || memberId || userData?.memberId;
+        // memberId 우선순위: URL 쿼리 파라미터 > userData.memberId > localStorage > userData에서 가져온 memberId
+        const storedMemberId = localStorage.getItem('memberId');
+        let targetMemberId =
+          memberIdFromQuery || memberId || userData?.memberId || (storedMemberId ? parseInt(storedMemberId, 10) : null);
         let triedAuthUuid = false;
 
         console.log('🔄 프로필 정보 불러오기 시작:', {
           memberIdFromQuery,
           memberId,
           userDataMemberId: userData?.memberId,
+          storedMemberId,
           targetMemberId,
           userDataId: userData?.id,
         });
 
-        // memberId가 없으면 getMemberInfoByAuthUuid로 memberId 얻기
+        // memberId가 없으면 getMemberInfoByAuthUuid로 회원 정보 직접 가져오기
         if (!targetMemberId && userData?.id) {
           console.log('🔄 memberId가 없어 authUuid로 조회 시도...');
           triedAuthUuid = true;
           const { getMemberInfoByAuthUuid } = await import('../../util/memberService');
           const authUuidResult = await getMemberInfoByAuthUuid(userData.id);
           if (authUuidResult.success && authUuidResult.data) {
-            targetMemberId = authUuidResult.data.id;
+            const memberData = authUuidResult.data;
+            targetMemberId = memberData.id;
             console.log('✅ memberId 획득:', targetMemberId);
+
+            // getMemberInfoByAuthUuid가 이미 완전한 Member 객체를 반환하므로 직접 사용
+            // profileImage 객체를 URL로 변환
+            let profileImageUrl = null;
+            if (memberData.profileImage) {
+              console.log('🖼️ [authUuid] profileImage 객체:', JSON.stringify(memberData.profileImage, null, 2));
+              profileImageUrl = getFileUrl(memberData.profileImage);
+              if (profileImageUrl) {
+                // 캐시 방지를 위해 타임스탬프 추가
+                const separator = profileImageUrl.includes('?') ? '&' : '?';
+                profileImageUrl = `${profileImageUrl}${separator}t=${Date.now()}`;
+                console.log('🖼️ [authUuid] 최종 이미지 URL:', profileImageUrl);
+              }
+            }
+
+            setProfile({
+              nickname: memberData.nickname || userData.nickname || null,
+              email: memberData.email || userEmail,
+              bio: memberData.introduction || '',
+              profileImage: profileImageUrl,
+            });
+            setImageLoadError(false);
+            setIsMemberNotFound(false);
+
+            // localStorage에도 memberId 저장
+            if (targetMemberId) {
+              localStorage.setItem('memberId', targetMemberId.toString());
+            }
+            return;
           } else {
             // 404 에러인 경우: 회원 정보가 아직 생성되지 않았을 수 있음
             if (authUuidResult.status === 404) {
@@ -252,42 +321,41 @@ function MemberInfoComp() {
               const { getMemberInfoByAuthUuid } = await import('../../util/memberService');
               const authUuidResult = await getMemberInfoByAuthUuid(userData.id);
               if (authUuidResult.success && authUuidResult.data) {
-                const newMemberId = authUuidResult.data.id;
+                const memberData = authUuidResult.data;
+                const newMemberId = memberData.id;
                 console.log('✅ 새로운 memberId 획득:', newMemberId);
 
-                // 새로운 memberId로 다시 조회
-                const retryResult = await getMemberInfo(newMemberId);
-                if (retryResult.success && retryResult.data) {
-                  const memberData = retryResult.data;
+                // getMemberInfoByAuthUuid가 이미 완전한 Member 객체를 반환하므로 직접 사용
+                // profileImage 객체를 URL로 변환
+                let profileImageUrl = null;
+                if (memberData.profileImage) {
+                  console.log('🖼️ [재시도] profileImage 객체:', JSON.stringify(memberData.profileImage, null, 2));
+                  profileImageUrl = getFileUrl(memberData.profileImage);
 
-                  // profileImage 객체를 URL로 변환
-                  let profileImageUrl = null;
-                  if (memberData.profileImage) {
-                    console.log('🖼️ [재시도] profileImage 객체:', JSON.stringify(memberData.profileImage, null, 2));
-
-                    // getFileUrl 함수 사용 (가장 안정적)
-                    profileImageUrl = getFileUrl(memberData.profileImage);
-
-                    if (profileImageUrl) {
-                      // 캐시 방지를 위해 타임스탬프 추가
-                      const separator = profileImageUrl.includes('?') ? '&' : '?';
-                      profileImageUrl = `${profileImageUrl}${separator}t=${Date.now()}`;
-                      console.log('🖼️ [재시도] 최종 이미지 URL:', profileImageUrl);
-                    } else {
-                      console.error('❌ [재시도] 이미지 URL을 생성할 수 없습니다.');
-                    }
+                  if (profileImageUrl) {
+                    // 캐시 방지를 위해 타임스탬프 추가
+                    const separator = profileImageUrl.includes('?') ? '&' : '?';
+                    profileImageUrl = `${profileImageUrl}${separator}t=${Date.now()}`;
+                    console.log('🖼️ [재시도] 최종 이미지 URL:', profileImageUrl);
+                  } else {
+                    console.error('❌ [재시도] 이미지 URL을 생성할 수 없습니다.');
                   }
-
-                  setProfile({
-                    nickname: memberData.nickname || userData.nickname || null,
-                    email: memberData.email || userEmail,
-                    bio: memberData.introduction || '',
-                    profileImage: profileImageUrl,
-                  });
-                  setImageLoadError(false);
-                  setIsMemberNotFound(false); // 회원 정보를 찾았으므로 false로 설정
-                  return;
                 }
+
+                setProfile({
+                  nickname: memberData.nickname || userData.nickname || null,
+                  email: memberData.email || userEmail,
+                  bio: memberData.introduction || '',
+                  profileImage: profileImageUrl,
+                });
+                setImageLoadError(false);
+                setIsMemberNotFound(false); // 회원 정보를 찾았으므로 false로 설정
+
+                // localStorage에도 memberId 저장
+                if (newMemberId) {
+                  localStorage.setItem('memberId', newMemberId.toString());
+                }
+                return;
               } else {
                 if (authUuidResult.status === 404) {
                   console.warn(

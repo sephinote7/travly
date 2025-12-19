@@ -1,6 +1,7 @@
 // src/common/AuthStateContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import supabase from '../util/supabaseClient.js';
+import { createOrUpdateMember, getMemberInfoByAuthUuid } from '../util/memberService.js';
 
 const AuthContext = createContext(null);
 
@@ -9,9 +10,10 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }) => {
   const [userData, setUserData] = useState({
     isLoggedIn: false,
-    id: null, // Supabase 사용자 ID
     name: null,
     email: null,
+    memberId: null,
+    id: null, // authUuid (Supabase user.id)
   });
 
   const [isUserCompOpen, setIsUserCompOpen] = useState(false);
@@ -47,16 +49,31 @@ export const AuthProvider = ({ children }) => {
       const isOAuthRedirect = checkOAuthRedirect();
 
       if (session) {
-        // 액세스 토큰을 localStorage에 저장 (API 호출용)
-        if (session.access_token) {
-          localStorage.setItem('authToken', session.access_token);
+        const authUuid = session.user.id;
+
+        // memberId 가져오기 시도
+        let memberId = null;
+        try {
+          const result = await getMemberInfoByAuthUuid(authUuid);
+          if (result.success && result.data?.id) {
+            memberId = result.data.id;
+            localStorage.setItem('memberId', memberId.toString());
+          }
+        } catch (err) {
+          console.error('세션 체크 시 memberId 가져오기 실패:', err);
+          // localStorage에서 memberId 가져오기 시도
+          const storedMemberId = localStorage.getItem('memberId');
+          if (storedMemberId) {
+            memberId = parseInt(storedMemberId, 10);
+          }
         }
 
         setUserData({
           isLoggedIn: true,
-          id: session.user.id, // Supabase 사용자 ID 추가
           name: session.user.user_metadata?.nickname ?? session.user.user_metadata?.full_name ?? null,
           email: session.user.email,
+          memberId: memberId,
+          id: authUuid,
         });
 
         // OAuth 리디렉션인 경우 프로필 모달 자동 오픈 및 로그인 모달 닫기
@@ -70,10 +87,6 @@ export const AuthProvider = ({ children }) => {
             window.history.replaceState(null, '', cleanUrl);
           }, 100);
         }
-      } else {
-        // 세션이 없으면 토큰도 제거
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('refreshToken');
       }
       initialSessionChecked = true;
     };
@@ -82,7 +95,7 @@ export const AuthProvider = ({ children }) => {
     checkSession();
 
     // 세션 변경(OAuth 리디렉션 포함) 실시간 반영
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       // 초기 세션 체크가 완료될 때까지 기다림
       if (!initialSessionChecked) {
         return;
@@ -90,17 +103,31 @@ export const AuthProvider = ({ children }) => {
 
       if (session) {
         const isOAuthRedirect = checkOAuthRedirect();
+        const authUuid = session.user.id;
 
-        // 액세스 토큰을 localStorage에 저장 (API 호출용)
-        if (session.access_token) {
-          localStorage.setItem('authToken', session.access_token);
+        // memberId 가져오기 시도
+        let memberId = null;
+        try {
+          const result = await getMemberInfoByAuthUuid(authUuid);
+          if (result.success && result.data?.id) {
+            memberId = result.data.id;
+            localStorage.setItem('memberId', memberId.toString());
+          }
+        } catch (err) {
+          console.error('auth state change 시 memberId 가져오기 실패:', err);
+          // localStorage에서 memberId 가져오기 시도
+          const storedMemberId = localStorage.getItem('memberId');
+          if (storedMemberId) {
+            memberId = parseInt(storedMemberId, 10);
+          }
         }
 
         setUserData({
           isLoggedIn: true,
-          id: session.user.id, // Supabase 사용자 ID 추가
           name: session.user.user_metadata?.nickname ?? session.user.user_metadata?.full_name ?? null,
           email: session.user.email,
+          memberId: memberId,
+          id: authUuid,
         });
 
         // OAuth 리디렉션이거나 새로 로그인된 경우 프로필 모달 자동 오픈
@@ -117,10 +144,7 @@ export const AuthProvider = ({ children }) => {
           }
         }
       } else {
-        // 세션이 없으면 토큰도 제거
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('refreshToken');
-        setUserData({ isLoggedIn: false, id: null, name: null, email: null });
+        setUserData({ isLoggedIn: false, name: null, email: null, memberId: null, id: null });
         setIsUserCompOpen(false);
       }
     });
@@ -150,65 +174,86 @@ export const AuthProvider = ({ children }) => {
 
     if (error) return { success: false, error };
 
-    // 회원가입 성공 시 member 테이블에 데이터 삽입
+    // 회원가입 성공 시 Spring 백엔드 API를 통해 member 테이블에 데이터 저장
     if (data.user) {
-      const userId = data.user.id;
-      const now = new Date().toISOString();
-      const memberData = {
-        auth_uuid: userId,
-        nickname: nickname.trim(),
-        name: nickname.trim(), // name은 nickname과 동일하게 설정
-        introduction: '',
-        notification_count: 0,
-        badge_id: 1, // 기본 배지 ID (1~5 중 하나, 기본값 1)
-        created_at: now,
-        updated_at: now,
-      };
+      const authUuid = data.user.id;
+      const trimmedNickname = nickname.trim();
 
-      console.log('Inserting member data:', memberData);
-      console.log('User ID:', userId);
+      console.log('회원가입 성공, Spring 백엔드에 회원 정보 저장 시도:', {
+        authUuid,
+        nickname: trimmedNickname,
+      });
 
+      // Spring 백엔드 API를 통해 회원 정보 생성
       // auth.users에 사용자가 완전히 생성될 때까지 지연 후 재시도 로직
-      let insertData = null;
+      let memberResult = null;
       let memberError = null;
+
       for (let i = 0; i < 5; i++) {
-        // 첫 시도 전에 지연
+        // 첫 시도 전에 지연 (auth.users 생성 대기)
         if (i > 0) {
           await new Promise((resolve) => setTimeout(resolve, 1000 * i));
         }
 
-        const result = await supabase.from('member').insert(memberData).select();
-        insertData = result.data;
-        memberError = result.error;
+        try {
+          // Spring 백엔드 API 호출
+          memberResult = await createOrUpdateMember({
+            authUuid: authUuid,
+            name: trimmedNickname, // name은 nickname과 동일하게 설정
+            nickname: trimmedNickname,
+            introduction: '',
+            profileImageFileId: null,
+          });
 
-        if (!memberError) {
-          console.log('Member data inserted successfully:', insertData);
-          break;
-        }
+          if (memberResult.success) {
+            console.log('Spring 백엔드에 회원 정보 저장 성공:', memberResult.data);
 
-        // 외래 키 제약 조건 에러인 경우에만 재시도
-        if (memberError.code === '23503') {
-          console.log(`Retry ${i + 1}/5: Foreign key constraint error, waiting...`);
-        } else {
-          // 다른 에러는 재시도하지 않음
-          console.error('Member table insert error (non-retryable):', memberError);
-          break;
+            // 응답에서 memberId 저장
+            const memberId = memberResult.data?.id;
+            if (memberId) {
+              localStorage.setItem('memberId', memberId.toString());
+              console.log('memberId 저장됨:', memberId);
+
+              // userData에도 memberId 반영
+              setUserData((prev) => ({
+                ...prev,
+                memberId: memberId,
+              }));
+            }
+
+            break;
+          } else {
+            // API 에러인 경우
+            memberError = memberResult.error;
+
+            // 400 에러 중 "등록되지 않은 인증 사용자 uuid"인 경우에만 재시도
+            if (memberResult.status === 400 && memberError?.includes('등록되지 않은 인증 사용자')) {
+              console.log(`Retry ${i + 1}/5: 인증 사용자 UUID 등록 대기 중...`);
+            } else {
+              // 다른 에러는 재시도하지 않음
+              console.error('회원 정보 저장 실패 (non-retryable):', memberError);
+              break;
+            }
+          }
+        } catch (err) {
+          console.error('회원 정보 저장 중 예외 발생:', err);
+          memberError = err.message || '회원 정보 저장 중 오류가 발생했습니다.';
+          // 네트워크 에러 등은 재시도
+          if (i < 4) {
+            console.log(`Retry ${i + 1}/5: 네트워크 오류, 재시도 중...`);
+          } else {
+            break;
+          }
         }
       }
 
-      if (memberError) {
-        console.error('Member table insert error (final):', memberError);
-        console.error('Error details:', {
-          message: memberError.message,
-          details: memberError.details,
-          hint: memberError.hint,
-          code: memberError.code,
-        });
-        // member 테이블 삽입 실패해도 auth는 성공했으므로 경고만 표시
+      if (!memberResult || !memberResult.success) {
+        console.error('회원 정보 저장 최종 실패:', memberError);
+        // Spring 백엔드 저장 실패해도 Supabase Authentication은 성공했으므로 경고만 표시
         return {
           success: true,
           data,
-          warning: `회원가입은 완료되었지만 프로필 정보 저장에 실패했습니다: ${memberError.message}`,
+          warning: `회원가입은 완료되었지만 프로필 정보 저장에 실패했습니다: ${memberError || '알 수 없는 오류'}`,
         };
       }
     }
@@ -225,17 +270,31 @@ export const AuthProvider = ({ children }) => {
 
     if (error) return { success: false, error };
 
-    // 액세스 토큰을 localStorage에 저장 (API 호출용)
-    const session = await supabase.auth.getSession();
-    if (session.data?.session?.access_token) {
-      localStorage.setItem('authToken', session.data.session.access_token);
+    // 로그인 성공 시 memberId 가져오기
+    const authUuid = data.user.id;
+    let memberId = null;
+
+    try {
+      // authUuid로 회원 정보 조회하여 memberId 가져오기
+      const result = await getMemberInfoByAuthUuid(authUuid);
+
+      if (result.success && result.data?.id) {
+        memberId = result.data.id;
+        // localStorage에 memberId 저장
+        localStorage.setItem('memberId', memberId.toString());
+        console.log('로그인 시 memberId 저장됨:', memberId);
+      }
+    } catch (err) {
+      console.error('로그인 시 memberId 가져오기 실패:', err);
+      // memberId 가져오기 실패해도 로그인은 성공 처리
     }
 
     setUserData({
       isLoggedIn: true,
-      id: data.user.id, // Supabase 사용자 ID 추가
       name: data.user.user_metadata?.nickname ?? null,
       email: data.user.email,
+      memberId: memberId,
+      id: data.user.id,
     });
 
     closeUserComp();
@@ -245,37 +304,10 @@ export const AuthProvider = ({ children }) => {
   // ⭐ 로그아웃
   const logout = async () => {
     await supabase.auth.signOut();
-    // 토큰 제거
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('refreshToken');
-    setUserData({ isLoggedIn: false, id: null, name: null, email: null, memberId: null, nickname: null });
+    setUserData({ isLoggedIn: false, name: null, email: null, memberId: null, id: null });
     setIsUserCompOpen(false);
-  };
-
-  // ⭐ Spring API에서 받은 회원 정보로 userData 업데이트
-  const updateUserDataFromSpring = async (memberData) => {
-    if (!memberData) {
-      console.warn('⚠️ updateUserDataFromSpring: memberData가 없습니다.');
-      return false;
-    }
-
-    try {
-      setUserData((prev) => ({
-        ...prev,
-        memberId: memberData.id,
-        nickname: memberData.nickname || prev.nickname,
-        name: memberData.name || memberData.nickname || prev.name,
-      }));
-      console.log('✅ userData 업데이트 완료:', {
-        memberId: memberData.id,
-        nickname: memberData.nickname,
-        name: memberData.name || memberData.nickname,
-      });
-      return true;
-    } catch (error) {
-      console.error('❌ userData 업데이트 실패:', error);
-      return false;
-    }
+    // 로그아웃 시 memberId도 제거
+    localStorage.removeItem('memberId');
   };
 
   return (
@@ -291,7 +323,6 @@ export const AuthProvider = ({ children }) => {
         signup,
         login,
         logout,
-        updateUserDataFromSpring,
       }}
     >
       {children}
