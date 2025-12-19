@@ -40,7 +40,10 @@ function HeaderComp() {
   };
 
   return (
-    <div className="container-fluid flex justify-between items-center px-[40px] h-[80px] relative">
+    <div
+      className="container-fluid flex justify-between items-center px-[40px] h-[80px] fixed top-0 left-0 right-0 bg-white z-50"
+      style={{ boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)' }}
+    >
       <Link to="/">
         <div className="flex h-[60px] ">
           <img src={TravlyLogo02} alt="Travly 로고 2" />

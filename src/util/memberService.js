@@ -263,7 +263,7 @@ export const createOrUpdateMember = async (memberData) => {
 
 /**
  * authUuid로 회원 정보 조회
- * GET /api/travly/member/by-auth/{authUuid}
+ * GET /api/travly/member/auth/{authUuid}
  *
  * @param {string} authUuid - 인증 사용자 UUID (필수)
  * @returns {Promise<{success: boolean, data?: Object, error?: string, status?: number}>}
@@ -278,6 +278,7 @@ export const createOrUpdateMember = async (memberData) => {
 export const getMemberInfoByAuthUuid = async (authUuid) => {
   // 입력값 검증
   if (!authUuid || typeof authUuid !== 'string') {
+    console.warn('getMemberInfoByAuthUuid: 유효하지 않은 authUuid:', authUuid);
     return {
       success: false,
       error: '인증 사용자 UUID가 필요합니다.',
@@ -286,10 +287,10 @@ export const getMemberInfoByAuthUuid = async (authUuid) => {
   }
 
   try {
-    // 회원 정보 조회
-    // 현재 로그인한 사용자의 정보를 가져오는 엔드포인트 사용
-    // JWT 토큰에서 자동으로 현재 사용자를 인식
-    const response = await apiClient.get(`/member`);
+    console.log('getMemberInfoByAuthUuid 호출:', authUuid);
+    // authUuid로 회원 정보 조회 (인증 불필요한 엔드포인트 사용)
+    const response = await apiClient.get(`/member/auth/${authUuid}`);
+    console.log('getMemberInfoByAuthUuid 응답:', response.data);
 
     // 성공 응답: 회원 정보 객체 반환
     return {
@@ -299,8 +300,8 @@ export const getMemberInfoByAuthUuid = async (authUuid) => {
   } catch (error) {
     // 400 에러 처리: 존재하지 않는 authUuid 또는 Member
     if (error.response?.status === 400) {
-      const errorMessage = error.response?.data?.message || `회원 정보를 찾을 수 없습니다: ${authUuid}`;
-      console.error('회원 정보 조회 실패 (400):', errorMessage);
+      const errorMessage = error.response?.data?.message || `UUID에 해당하는 Member를 찾을 수 없습니다: ${authUuid}`;
+      console.error('회원 정보 조회 실패 (400):', errorMessage, error.response?.data);
       return {
         success: false,
         error: errorMessage,
@@ -308,8 +309,22 @@ export const getMemberInfoByAuthUuid = async (authUuid) => {
       };
     }
 
+    // 404 에러 처리
+    if (error.response?.status === 404) {
+      console.error('회원 정보 조회 실패 (404):', error.response?.data);
+      return {
+        success: false,
+        error: '회원 정보를 찾을 수 없습니다.',
+        status: 404,
+      };
+    }
+
     // 기타 에러 처리
-    console.error('회원 정보 조회 실패:', error);
+    console.error('회원 정보 조회 실패:', {
+      status: error.response?.status,
+      message: error.response?.data?.message || error.message,
+      error: error,
+    });
     return {
       success: false,
       error: error.response?.data?.message || error.message || '회원 정보 조회 중 오류가 발생했습니다.',
