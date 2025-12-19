@@ -88,6 +88,7 @@ function mapBoardApiToViewModel(apiBoard) {
     title: apiBoard.title || '',
     viewCount: apiBoard.viewCount ?? 0,
     likeCount: apiBoard.likeCount ?? 0,
+    isLiked: apiBoard.isLiked || apiBoard.liked || false,
     createdAtStr,
     updatedAtStr,
     writer,
@@ -125,12 +126,39 @@ export default function ViewComp() {
       if (!silent) setLoading(true); // ⭐ 최초 로딩만
       const res = await apiClient.get(`/board/${id}`);
 
+      console.log('새로고침 후 상세 데이터:', res.data);
       setRawBoard(res.data);
-      setBoard(mapBoardApiToViewModel(res.data));
+      setBoard((prev) => {
+        const mappedData = mapBoardApiToViewModel(res.data);
+        return {
+          ...mappedData,
+          // 만약 fetchLikeStatus가 이미 데이터를 가져와서 prev.isLiked가 true라면,
+          // 새로 가져온 데이터(isLiked 없음)가 그걸 덮어쓰지 않도록 보존합니다.
+          isLiked: prev?.isLiked ?? mappedData.isLiked,
+        };
+      });
     } catch (e) {
       console.error(e);
     } finally {
       if (!silent) setLoading(false);
+    }
+  }
+
+  // 2. ⭐ 좋아요 여부만 별도로 확인하는 함수 (추가)
+  async function fetchLikeStatus() {
+    if (!id) return;
+    try {
+      // 백엔드에 이 글을 내가 좋아요 했는지 물어보는 API가 있다고 가정
+      const res = await apiClient.get(`/board/${id}/like`);
+      console.log('좋아요 데이터 : ', res.data);
+
+      // 받아온 결과를 기존 board 상태에 합쳐줌
+      setBoard((prev) => ({
+        ...prev,
+        isLiked: res.data.isLiked, // 서버에서 준 true/false
+      }));
+    } catch (err) {
+      console.log('좋아요 상태 확인 실패 (비로그인 등)');
     }
   }
 
@@ -140,6 +168,8 @@ export default function ViewComp() {
       return;
     }
     fetchBoardData();
+    fetchLikeStatus();
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -351,7 +381,7 @@ export default function ViewComp() {
           <div className="view-actions-row">
             <LikeButtonComp
               boardId={board.id}
-              initialIsLiked={initialIsLiked}
+              initialIsLiked={board.isLiked ?? rawBoard?.isLiked ?? false}
               refetchBoardData={() => fetchBoardData({ silent: true })}
             />
 

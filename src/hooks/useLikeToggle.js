@@ -37,6 +37,9 @@ export const useLikeToggle = (boardId, initialIsLiked, refetchBoardData) => {
       // apiClient 내부 interceptor가 토큰을 자동으로 헤더에 넣어줍니다.
       const response = await apiClient.post(`/board/${boardId}/like`, null);
 
+      // 🔍 디버깅: 서버가 주는 진짜 데이터를 확인하세요!
+      console.log('좋아요 클릭 후 서버 응답:', response.data);
+
       // 4. 백엔드에서 준 최신 좋아요 상태 반영 (LikeResponse { boolean isLiked })
       const serverStatus = response.data.isLiked;
       setIsLiked(serverStatus);
