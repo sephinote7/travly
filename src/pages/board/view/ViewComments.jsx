@@ -4,7 +4,7 @@ import { formatDateTime } from './viewMappers';
 
 export default function ViewComments({
   comments,
-  badgeMap,
+  badgeNameMap,
   commentText,
   setCommentText,
   commentPosting,
