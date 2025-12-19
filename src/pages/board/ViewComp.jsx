@@ -379,11 +379,14 @@ export default function ViewComp() {
           </div>
           {/* ✅ 좋아요 / 북마크 라인 */}
           <div className="view-actions-row">
-            <LikeButtonComp
-              boardId={board.id}
-              initialIsLiked={board.isLiked ?? rawBoard?.isLiked ?? false}
-              refetchBoardData={() => fetchBoardData({ silent: true })}
-            />
+            <div className="flex gap-2">
+              <LikeButtonComp
+                boardId={board.id}
+                initialIsLiked={board.isLiked ?? rawBoard?.isLiked ?? false}
+                refetchBoardData={() => fetchBoardData({ silent: true })}
+              />
+              <p>({board.likeCount} 개)</p>
+            </div>
 
             <button type="button" className="view-bookmark-btn">
               북마크
