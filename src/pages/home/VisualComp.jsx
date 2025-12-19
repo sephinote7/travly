@@ -12,7 +12,9 @@ export default function VisualComp() {
           <br />
           가장 새로운 여행 이야기가 당신을 기다려요!
         </h2>
-        <p className="text-lg md:text-xl">매일매일 새로운 세상을 발견하세요</p>
+        <p className="text-lg md:text-xl drop-shadow-2xl">
+          매일매일 새로운 세상을 발견하세요
+        </p>
       </div>
     </section>
   );

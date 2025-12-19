@@ -16,7 +16,7 @@ function HeaderComp() {
   const [isNoticeOpen, setIsNoticeOpen] = useState(false);
   const [hasNewNotice, setHasNewNotice] = useState(true);
 
-  const { userData, toggleUserComp, openLoginModal, isUserCompOpen } =
+  const { userData, isUserCompOpen, toggleUserComp, openLoginModal } =
     useAuth();
 
   // 사람 아이콘 클릭 시: 로그인 여부에 따라 동작 분기
