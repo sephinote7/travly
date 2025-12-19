@@ -86,6 +86,7 @@ function mapBoardApiToViewModel(apiBoard) {
   return {
     id: apiBoard.id,
     title: apiBoard.title || '',
+    isLiked: apiBoard.isLiked,
     viewCount: apiBoard.viewCount ?? 0,
     likeCount: apiBoard.likeCount ?? 0,
     createdAtStr,
@@ -360,11 +361,14 @@ export default function ViewComp() {
           </div>
           {/* ✅ 좋아요 / 북마크 라인 */}
           <div className="view-actions-row">
-            <LikeButtonComp
-              boardId={board.id}
-              initialIsLiked={initialIsLiked}
-              refetchBoardData={fetchBoardData}
-            />
+            <div className="flex gap-3">
+              <LikeButtonComp
+                boardId={board.id}
+                initialIsLiked={board.isLiked || false}
+                refetchBoardData={fetchBoardData}
+              />
+              <span className="view-like-count">({board.likeCount || 0})</span>
+            </div>
 
             <button type="button" className="view-bookmark-btn">
               북마크
