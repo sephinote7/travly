@@ -1,46 +1,51 @@
 // src/pages/board/ListComp.jsx
-import { useEffect, useMemo, useState } from "react";
-import PostListItem from "./components/PostListItem";
-import Pagination from "./components/common/Pagination";
-import apiClient from "../../services/apiClient";
-import "../../styles/PostListPage.css";
+import { useEffect, useMemo, useState } from 'react';
+import PostListItem from './components/PostListItem';
+import Pagination from './components/common/Pagination';
+import apiClient from '../../services/apiClient';
+import '../../styles/PostListPage.css';
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 10; // ✅ 1페이지 10개
 
 function ListComp() {
   const [page, setPage] = useState(1);
 
-  /* =========================
-     UI 상태
-  ========================= */
+  // UI 상태
   const [showFilters, setShowFilters] = useState(false);
-  const [q, setQ] = useState("");
-  const [tab, setTab] = useState("all");
+  const [q, setQ] = useState('');
+  const [tab, setTab] = useState('all'); // all=최신순, hot=인기순
 
-  /* =========================
-     필터 버튼 상태 (핵심)
-  ========================= */
-  const [filters, setFilters] = useState([]); // 모든 필터 item
+  // 필터 상태
+  const [filters, setFilters] = useState([]);
   const [selectedFilterIds, setSelectedFilterIds] = useState([]);
 
-  /* =========================
-     게시글 목록
-  ========================= */
+  // 게시글
   const [posts, setPosts] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const orderby = useMemo(() => (tab === "hot" ? "like" : "updatedAt"), [tab]);
+  const hasFilter = selectedFilterIds.length > 0;
+  // ✅ 서버 스펙: orderby=like / updatedAt
+  const orderby = useMemo(() => (tab === 'hot' ? 'like' : 'updatedAt'), [tab]);
 
-  /* =========================
-     1️⃣ 필터 데이터 로드 (/filter)
-  ========================= */
+  // ✅ (유지) 프론트 검색: 현재 페이지 posts에서만 필터링
+  const filtered = useMemo(() => {
+    const keyword = q.trim().toLowerCase();
+    if (!keyword) return posts;
+    return posts.filter(
+      (p) =>
+        (p.title || '').toLowerCase().includes(keyword) ||
+        (p.placeTitle || '').toLowerCase().includes(keyword) ||
+        (p.memberNickname || '').toLowerCase().includes(keyword)
+    );
+  }, [posts, q]);
+
+  // 필터 로드
   useEffect(() => {
     (async () => {
       try {
-        const res = await apiClient.get("/filter");
-        // 모든 카테고리의 items를 하나로 합침
+        const res = await apiClient.get('/filter');
         const allItems = (res.data || []).flatMap((f) => f.items || []);
         setFilters(allItems);
       } catch (e) {
@@ -50,9 +55,6 @@ function ListComp() {
     })();
   }, []);
 
-  /* =========================
-     2️⃣ 필터 버튼 토글
-  ========================= */
   function toggleFilter(itemId) {
     setSelectedFilterIds((prev) =>
       prev.includes(itemId)
@@ -67,71 +69,58 @@ function ListComp() {
     setPage(1);
   }
 
-  /* =========================
-     3️⃣ 게시글 조회 (필터 포함)
-  ========================= */
+  // ✅ 검색/정렬/필터가 바뀌면 1페이지부터 다시
+  useEffect(() => {
+    setPage(1);
+  }, [q, orderby, selectedFilterIds]);
+
+  // ✅ 서버에서 목록 가져오기 (최신/인기 정렬 포함)
+  useEffect(() => {
+    fetchPosts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, orderby, selectedFilterIds]);
+
   async function fetchPosts() {
     setLoading(true);
     setError(null);
 
     try {
-      const res = await apiClient.request({
-        method: "get",
-        url: "/board",
-        params: {
-          size: PAGE_SIZE,
-          page: page - 1,
-          orderby,
-        },
-        data: {
-          itemIds: selectedFilterIds, // ✅ 버튼형 필터
-        },
-      });
+      const hasFilter = selectedFilterIds.length > 0;
+
+      const res = hasFilter
+        ? await apiClient.post(
+            '/board/search',
+            { itemIds: selectedFilterIds },
+            {
+              params: {
+                size: PAGE_SIZE,
+                page: page - 1,
+              },
+            }
+          )
+        : await apiClient.get('/board', {
+            params: {
+              size: PAGE_SIZE,
+              page: page - 1,
+              orderby, // ✅ 전체글일 때만 최신/인기 적용
+            },
+          });
 
       const data = res.data;
-
-      const mapped = (data.content || []).map((b) => ({
-        id: b.id,
-        title: b.title,
-        placeTitle: b.placeTitle,
-        placeContent: b.placeContent,
-        updatedAt: b.updatedAt,
-        viewCount: b.viewCount ?? 0,
-        likeCount: b.likeCount ?? 0,
-        memberNickname: b.memberNickname,
-        memberThumbail: b.memberThumbail,
-        badgeId: b.badgeId,
-        thumbnailFilename: b.thumbnailFilename,
-        placeFileId: b.placeFileId,
-      }));
-
-      setPosts(mapped);
-      setTotalPages(data.totalPages ?? 1);
+      setPosts(data.content || []);
+      const tp = Number.isFinite(data.totalPages)
+        ? data.totalPages
+        : Number.isFinite(data.totalElements)
+        ? Math.ceil(data.totalElements / PAGE_SIZE)
+        : 10;
+      setTotalPages(tp);
     } catch (e) {
       console.error(e);
-      setError("게시글을 불러오는 중 오류가 발생했습니다.");
+      setError('게시글을 불러오는 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
   }
-
-  useEffect(() => {
-    fetchPosts();
-  }, [page, orderby, selectedFilterIds]);
-
-  /* =========================
-     4️⃣ 검색어는 프론트 필터
-  ========================= */
-  const filtered = useMemo(() => {
-    const keyword = q.trim().toLowerCase();
-    if (!keyword) return posts;
-    return posts.filter(
-      (p) =>
-        (p.title || "").toLowerCase().includes(keyword) ||
-        (p.placeTitle || "").toLowerCase().includes(keyword) ||
-        (p.memberNickname || "").toLowerCase().includes(keyword)
-    );
-  }, [posts, q]);
 
   return (
     <div className="pl-root">
@@ -139,7 +128,7 @@ function ListComp() {
         <header className="pl-header">
           <h1 className="pl-title">모든 이야기 둘러보기</h1>
 
-          {/* 🔍 검색 + 필터 토글 */}
+          {/* 검색 + 필터 토글 */}
           <div className="pl-searchRow">
             <input
               className="pl-searchInput"
@@ -156,7 +145,7 @@ function ListComp() {
             </button>
           </div>
 
-          {/* ✅ 버튼형 필터 패널 */}
+          {/* 필터 패널 */}
           {showFilters && (
             <div className="pl-filterPanel">
               <div className="pl-chipGrid">
@@ -165,7 +154,7 @@ function ListComp() {
                     key={item.id}
                     type="button"
                     className={`pl-chip ${
-                      selectedFilterIds.includes(item.id) ? "is-active" : ""
+                      selectedFilterIds.includes(item.id) ? 'is-active' : ''
                     }`}
                     onClick={() => toggleFilter(item.id)}
                   >
@@ -190,21 +179,15 @@ function ListComp() {
           <div className="pl-tabRow">
             <button
               type="button"
-              className={`pl-tab ${tab === "all" ? "is-active" : ""}`}
-              onClick={() => {
-                setTab("all");
-                setPage(1);
-              }}
+              className={`pl-tab ${tab === 'all' ? 'is-active' : ''}`}
+              onClick={() => setTab('all')}
             >
               최신순
             </button>
             <button
               type="button"
-              className={`pl-tab ${tab === "hot" ? "is-active" : ""}`}
-              onClick={() => {
-                setTab("hot");
-                setPage(1);
-              }}
+              className={`pl-tab ${tab === 'hot' ? 'is-active' : ''}`}
+              onClick={() => setTab('hot')}
             >
               인기순
             </button>
@@ -232,6 +215,7 @@ function ListComp() {
               page={page}
               totalPages={totalPages}
               onPageChange={setPage}
+              maxButtons={5} // ✅ 사진처럼 최대 5개 버튼
             />
           </div>
         </main>

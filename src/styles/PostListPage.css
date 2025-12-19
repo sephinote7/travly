@@ -193,6 +193,10 @@
   cursor: pointer;
   font-size: 13px;
 }
+.pl-tab:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 
 .pl-tab.is-active {
   border-color: #2563eb;
@@ -334,6 +338,52 @@
   margin-top: 14px;
   display: flex;
   justify-content: center;
+} /* Pagination (screenshot style) */
+.Pagination {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.Pagination > button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.Pagination > button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.Pagination-pages {
+  display: inline-flex;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.Pagination-pages button {
+  min-width: 44px;
+  height: 34px;
+  border: 0;
+  border-right: 1px solid #e5e7eb;
+  background: transparent;
+  cursor: pointer;
+}
+
+.Pagination-pages button:last-child {
+  border-right: 0;
+}
+
+.Pagination-pages button.active {
+  background: #3b82f6;
+  color: #fff;
+  font-weight: 700;
 }
 
 /* 반응형: 화면 좁으면 세로로 */
@@ -434,4 +484,62 @@
 
 .pl-filterReset:hover {
   background-color: #e2e8f0;
+}
+/* ===== Filter UI (final override) ===== */
+.pl-filterPanel {
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.pl-chipGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 720px) {
+  .pl-chipGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.pl-chip {
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background-color: #f8fafc;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.pl-chip:hover {
+  background-color: #e0f2fe;
+  border-color: #38bdf8;
+  color: #0369a1;
+}
+
+.pl-chip.is-active {
+  background-color: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.pl-chip.is-active:hover {
+  background-color: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+/* ===== Pagination spacing tweak ===== */
+.pl-pagination {
+  margin-top: 18px; /* 살짝 여유 */
+  display: flex;
+  justify-content: center;
 }

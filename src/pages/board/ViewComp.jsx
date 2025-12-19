@@ -1,18 +1,18 @@
 // src/pages/board/ViewComp.jsx
-import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import "../../styles/ViewComp.css";
-import apiClient from "../../services/apiClient";
-import { useKakaoMap } from "../../hooks/useKakaoMap";
-import { redrawMarkersAndPolyline } from "../../utils/mapDrawingUtils";
-import LikeButtonComp from "../../common/LikeButtonComp";
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import '../../styles/ViewComp.css';
+import apiClient from '../../services/apiClient';
+import { useKakaoMap } from '../../hooks/useKakaoMap';
+import { redrawMarkersAndPolyline } from '../../utils/mapDrawingUtils';
+import LikeButtonComp from '../../common/LikeButtonComp';
 
-const MARKER_COLORS = ["#3b82f6", "#10b981", "#f97316", "#ec4899", "#6366f1"];
-const API_BASE = "http://localhost:8080/api/travly";
+const MARKER_COLORS = ['#3b82f6', '#10b981', '#f97316', '#ec4899', '#6366f1'];
+const API_BASE = 'http://localhost:8080/api/travly';
 
 // 외부 placeholder DNS 이슈 방지용
 const FALLBACK_AVATAR =
-  "data:image/svg+xml;utf8," +
+  'data:image/svg+xml;utf8,' +
   encodeURIComponent(`
     <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40">
       <rect width="100%" height="100%" rx="20" ry="20" fill="#eef2f7"/>
@@ -22,24 +22,24 @@ const FALLBACK_AVATAR =
   `);
 
 function formatDateTime(iso) {
-  if (!iso) return "";
+  if (!iso) return '';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
   const yy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mi = String(d.getMinutes()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mi = String(d.getMinutes()).padStart(2, '0');
   return `${yy}.${mm}.${dd} ${hh}:${mi}`;
 }
 
 function normalizeFilename(name) {
   if (!name) return name;
-  return name.replace(/(\.(jpg|jpeg|png|webp))\.\2$/i, ".$2");
+  return name.replace(/(\.(jpg|jpeg|png|webp))\.\2$/i, '.$2');
 }
 
 function buildFileUrl(filename) {
-  if (!filename) return "";
+  if (!filename) return '';
   return `${API_BASE}/file/${normalizeFilename(filename)}`;
 }
 
@@ -50,8 +50,8 @@ function mapBoardApiToViewModel(apiBoard) {
 
   const writer = {
     id: apiBoard.member?.id,
-    nickname: apiBoard.member?.nickname || "익명",
-    badgeName: apiBoard.member?.badge?.name || "",
+    nickname: apiBoard.member?.nickname || '익명',
+    badgeName: apiBoard.member?.badge?.name || '',
     profileImageUrl: apiBoard.member?.profileImage
       ? buildFileUrl(apiBoard.member.profileImage)
       : FALLBACK_AVATAR,
@@ -69,23 +69,23 @@ function mapBoardApiToViewModel(apiBoard) {
           .filter(Boolean);
 
         // 썸네일: t_ 있으면 우선, 없으면 첫 파일
-        const thumb = files.find((fn) => fn.startsWith("t_")) || files[0] || "";
+        const thumb = files.find((fn) => fn.startsWith('t_')) || files[0] || '';
 
         return {
           id: p.id,
           name: p.title,
-          content: p.content || "",
+          content: p.content || '',
           orderNum: p.orderNum ?? 0,
           x: p.x,
           y: p.y,
-          thumbnailUrl: thumb ? buildFileUrl(thumb) : "",
+          thumbnailUrl: thumb ? buildFileUrl(thumb) : '',
           photos: files.map((fn) => ({ url: buildFileUrl(fn) })),
         };
       }) || [];
 
   return {
     id: apiBoard.id,
-    title: apiBoard.title || "",
+    title: apiBoard.title || '',
     viewCount: apiBoard.viewCount ?? 0,
     likeCount: apiBoard.likeCount ?? 0,
     createdAtStr,
@@ -106,13 +106,13 @@ export default function ViewComp() {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   // Kakao map
-  const mapRef = useKakaoMap("map");
+  const mapRef = useKakaoMap('map');
   const markersRef = useRef([]);
   const polylineRef = useRef(null);
 
   // 댓글 상태
   const [comments, setComments] = useState([]);
-  const [commentText, setCommentText] = useState("");
+  const [commentText, setCommentText] = useState('');
   const [commentPosting, setCommentPosting] = useState(false);
 
   const [commentPage, setCommentPage] = useState(0);
@@ -120,19 +120,17 @@ export default function ViewComp() {
   const [commentLoading, setCommentLoading] = useState(false);
 
   // 1) 게시글 상세 로드
-  async function fetchBoardData() {
+  async function fetchBoardData({ silent = false } = {}) {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true); // ⭐ 최초 로딩만
       const res = await apiClient.get(`/board/${id}`);
 
       setRawBoard(res.data);
       setBoard(mapBoardApiToViewModel(res.data));
-      setSelectedIndex(0);
-    } catch (err) {
-      console.error("board 조회 실패:", err);
-      setBoard(null);
+    } catch (e) {
+      console.error(e);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }
 
@@ -203,16 +201,17 @@ export default function ViewComp() {
 
       const mapped = content.map((c) => ({
         id: c.id,
-        writerName: c.memberNickname || c.writerName || "익명",
-        content: c.content || c.comment || "",
-        createdAt: c.createdAt || "",
+        writerName:
+          c.member?.nickname || c.memberNickname || c.writerName || '익명',
+        content: c.content || c.comment || '',
+        createdAt: c.createdAt || '',
       }));
 
       setComments((prev) => (page === 0 ? mapped : [...prev, ...mapped]));
       setCommentLast(last);
       setCommentPage(page);
     } catch (err) {
-      console.error("댓글 조회 실패:", err);
+      console.error('댓글 조회 실패:', err);
     } finally {
       setCommentLoading(false);
     }
@@ -232,7 +231,7 @@ export default function ViewComp() {
   async function handleCreateComment() {
     const text = commentText.trim();
     if (!text) {
-      alert("댓글을 입력해 주세요.");
+      alert('댓글을 입력해 주세요.');
       return;
     }
     if (!board?.id) return;
@@ -240,45 +239,35 @@ export default function ViewComp() {
     try {
       setCommentPosting(true);
 
-      // 서버 DTO가 content 또는 comment일 수 있어서 2단 시도
-      let res;
-      try {
-        res = await apiClient.post(`/board/${board.id}/comment`, {
-          content: text,
-        });
-      } catch (e1) {
-        res = await apiClient.post(`/board/${board.id}/comment`, {
-          comment: text,
-        });
-      }
+      const res = await apiClient.post(`/board/${board.id}/comment`, {
+        comment: text, // ✅ 서버가 쓰는 필드명
+        // memberId: 1,         // ✅ 서버가 요구하면 추가 (응답엔 있으니까 필요할 수도 있음)
+      });
 
-      // 작성 후: 최신 목록 다시 불러오기(가장 안전)
-      setCommentText("");
+      setCommentText('');
       setCommentLast(false);
       await fetchComments(0);
 
-      // board.commentCount 같은 필드가 없어서 UI에서 comments.length로 보여줌
-      // 필요하면 서버에서 commentCount 내려주면 여기서 setBoard로 갱신 가능
       return res.data;
     } catch (err) {
-      console.error("댓글 등록 실패:", err.response?.data || err);
-      alert("댓글 등록에 실패했습니다.");
+      console.error('댓글 등록 실패:', err.response?.data || err);
+      alert('한글당 하나만 작성할수 있습니다.');
     } finally {
       setCommentPosting(false);
     }
   }
 
   async function handleDelete() {
-    const ok = window.confirm("정말 삭제하시겠습니까?");
+    const ok = window.confirm('정말 삭제하시겠습니까?');
     if (!ok) return;
 
     try {
       await apiClient.delete(`/board/${board.id}`);
-      alert("삭제되었습니다.");
-      navigate("/board");
+      alert('삭제되었습니다.');
+      navigate('/board');
     } catch (err) {
-      console.error("삭제 실패:", err);
-      alert("삭제에 실패했습니다.");
+      console.error('삭제 실패:', err);
+      alert('삭제에 실패했습니다.');
     }
   }
 
@@ -290,7 +279,7 @@ export default function ViewComp() {
   const initialIsLiked = Boolean(rawBoard?.isLiked ?? rawBoard?.liked ?? false);
 
   const selectedPlace = board.places[selectedIndex] ||
-    board.places[0] || { name: "", content: "", photos: [] };
+    board.places[0] || { name: '', content: '', photos: [] };
 
   return (
     <div className="view-root">
@@ -306,7 +295,7 @@ export default function ViewComp() {
           <button
             className="view-back-link"
             type="button"
-            onClick={() => navigate("/board")}
+            onClick={() => navigate('/board')}
           >
             전체 여행기 목록보기
           </button>
@@ -314,7 +303,7 @@ export default function ViewComp() {
           <h1 className="view-title">{board.title}</h1>
 
           <div className="view-submeta">
-            작성 {board.createdAtStr} · 수정 {board.updatedAtStr} · 조회{" "}
+            작성 {board.createdAtStr} · 수정 {board.updatedAtStr} · 조회{' '}
             {board.viewCount}
           </div>
 
@@ -354,7 +343,7 @@ export default function ViewComp() {
               </div>
 
               <div className="view-writer-meta">
-                {board.writer.badgeName || "여행자"}
+                {board.writer.badgeName || '여행자'}
               </div>
             </div>
           </div>
@@ -363,7 +352,7 @@ export default function ViewComp() {
             <LikeButtonComp
               boardId={board.id}
               initialIsLiked={initialIsLiked}
-              refetchBoardData={fetchBoardData}
+              refetchBoardData={() => fetchBoardData({ silent: true })}
             />
 
             <button type="button" className="view-bookmark-btn">
@@ -400,8 +389,8 @@ export default function ViewComp() {
                   }
                 }}
                 className={
-                  "view-thumb-item" +
-                  (idx === selectedIndex ? " view-thumb-item--active" : "")
+                  'view-thumb-item' +
+                  (idx === selectedIndex ? ' view-thumb-item--active' : '')
                 }
               >
                 {place.thumbnailUrl ? (
@@ -478,7 +467,7 @@ export default function ViewComp() {
                 onClick={handleCreateComment}
                 disabled={commentPosting}
               >
-                {commentPosting ? "등록 중..." : "등록"}
+                {commentPosting ? '등록 중...' : '등록'}
               </button>
             </div>
           </div>
@@ -488,7 +477,7 @@ export default function ViewComp() {
               <li key={c.id} className="view-comment-item">
                 <div className="view-comment-header">
                   <div className="view-comment-avatar">
-                    {c.writerName?.[0] || "?"}
+                    {c.writerName?.[0] || '?'}
                   </div>
                   <div>
                     <div className="view-comment-writer">{c.writerName}</div>
@@ -503,13 +492,13 @@ export default function ViewComp() {
           </ul>
 
           {!commentLast && (
-            <div style={{ textAlign: "center", marginTop: 12 }}>
+            <div style={{ textAlign: 'center', marginTop: 12 }}>
               <button
                 type="button"
                 onClick={() => fetchComments(commentPage + 1)}
                 disabled={commentLoading}
               >
-                {commentLoading ? "불러오는 중..." : "댓글 더 보기"}
+                {commentLoading ? '불러오는 중...' : '댓글 더 보기'}
               </button>
             </div>
           )}
