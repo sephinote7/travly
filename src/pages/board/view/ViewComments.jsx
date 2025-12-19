@@ -4,6 +4,7 @@ import { formatDateTime } from './viewMappers';
 
 export default function ViewComments({
   comments,
+  badgeMap,
   commentText,
   setCommentText,
   commentPosting,
@@ -46,7 +47,15 @@ export default function ViewComments({
                 {c.writerName?.[0] || '?'}
               </div>
               <div>
-                <div className="view-comment-writer">{c.writerName}</div>
+                <div className="view-comment-writer">
+                  {c.writerName}
+                  {c.badgeId && badgeNameMap?.[c.badgeId] && (
+                    <span className="view-badge">
+                      {badgeNameMap[c.badgeId]}
+                    </span>
+                  )}
+                </div>
+
                 <div className="view-comment-date">
                   {formatDateTime(c.createdAt)}
                 </div>

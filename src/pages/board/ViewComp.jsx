@@ -16,7 +16,7 @@ import ViewComments from './view/ViewComments';
 export default function ViewComp() {
   const navigate = useNavigate();
   const { id } = useParams(); // /board/:id
-  const { isLiked, setIsLiked, refetchLike } = useBoardLike(id);
+  const { isLiked, setIsLiked, fetchLikeStatus } = useBoardLike(id);
 
   // ✅ 1) 게시글 상세 로드 (훅)
   const { loading, board, rawBoard, fetchBoardData } = useBoardDetail(id);
@@ -24,16 +24,16 @@ export default function ViewComp() {
   // ✅ 2) 댓글 (훅)
   const {
     comments,
+    badgeNameMap,
     commentText,
     setCommentText,
+    commentPosting,
     commentPage,
     commentLast,
     commentLoading,
-    commentPosting,
     fetchComments,
     createComment,
   } = useBoardComments(board?.id);
-
   // ✅ 3) 썸네일 선택
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -148,7 +148,10 @@ export default function ViewComp() {
             <LikeButtonComp
               boardId={board.id}
               initialIsLiked={isLiked}
-              onLikeChange={setIsLiked}
+              onLikeChange={(next) => {
+                setIsLiked(next);
+                fetchLikeStatus(); // ✅ 서버 기준으로 다시 맞춤
+              }}
               refetchBoardData={() => fetchBoardData({ silent: true })}
             />
 
@@ -249,13 +252,14 @@ export default function ViewComp() {
         {/* 댓글 */}
         <ViewComments
           comments={comments}
+          badgeNameMap={badgeNameMap}
           commentText={commentText}
           setCommentText={setCommentText}
           commentPosting={commentPosting}
           commentPage={commentPage}
           commentLast={commentLast}
           commentLoading={commentLoading}
-          onSubmit={handleCreateComment}
+          onSubmit={createComment}
           onLoadMore={fetchComments}
         />
       </main>
