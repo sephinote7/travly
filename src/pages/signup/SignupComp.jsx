@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import kakaoIcon from '../../common/images/kakao.png';
-import travlyLogo from '../../common/images/logo2.png';
+import travlyLogo from '../../common/images/Logo2.png';
 import { useAuth } from '../../common/AuthStateContext.jsx';
 import { supabase } from '../../util/supabaseClient.js';
 
@@ -64,7 +64,11 @@ function SignupComp() {
       return;
     }
 
-    alert('회원가입 성공! 이메일 인증을 완료해주세요.');
+    if (result.warning) {
+      alert(result.warning);
+    } else {
+      alert('회원가입 성공! 이메일 인증을 완료해주세요.');
+    }
     navigate('/');
   };
 

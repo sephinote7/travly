@@ -113,6 +113,7 @@ function ListComp() {
         : Number.isFinite(data.totalElements)
         ? Math.ceil(data.totalElements / PAGE_SIZE)
         : 10;
+
       setTotalPages(tp);
     } catch (e) {
       console.error(e);

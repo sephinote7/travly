@@ -1,13 +1,49 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import badge04 from './images/badge04.png';
 import testprofile from './images/testprofile.gif';
 import { useAuth } from './AuthStateContext';
+import { getMemberInfoByAuthUuid } from '../util/memberService';
+import { getFileUrl } from '../util/fileService';
 
 function SideProfileComp() {
   const navigate = useNavigate();
   const { userData, logout, closeUserComp } = useAuth();
-  const { name = 'Irem', email = 'test@test.com' } = userData;
+  const { name = 'Irem', email = 'test@test.com', id: authUuid } = userData;
+  const [profileImage, setProfileImage] = useState(null);
+  const [imageLoadError, setImageLoadError] = useState(false);
+
+  // 프로필 이미지 로드
+  useEffect(() => {
+    const loadProfileImage = async () => {
+      if (!authUuid || !userData?.isLoggedIn) {
+        setProfileImage(null);
+        return;
+      }
+
+      try {
+        const result = await getMemberInfoByAuthUuid(authUuid);
+        if (result.success && result.data?.profileImage) {
+          const imageUrl = getFileUrl(result.data.profileImage);
+          if (imageUrl) {
+            // 캐시 방지를 위해 타임스탬프 추가
+            const separator = imageUrl.includes('?') ? '&' : '?';
+            setProfileImage(`${imageUrl}${separator}t=${Date.now()}`);
+            setImageLoadError(false);
+          } else {
+            setProfileImage(null);
+          }
+        } else {
+          setProfileImage(null);
+        }
+      } catch (err) {
+        console.error('프로필 이미지 로드 실패:', err);
+        setProfileImage(null);
+      }
+    };
+
+    loadProfileImage();
+  }, [authUuid, userData?.isLoggedIn]);
 
   const handleLogout = async () => {
     await logout();
@@ -19,7 +55,21 @@ function SideProfileComp() {
     <div className="w-[300px] h-[360px] p-8 absolute top-full right-0 mt-2 bg-white flex flex-col justify-center items-center shadow-lg z-50">
       <div className="flex flex-col gap-7.5">
         <div className="flex border-b py-[10px]">
-          <img src={testprofile} className="w-[80px] h-[80px] border rounded-[40px]" alt="" />
+          <div className="w-[80px] h-[80px] border rounded-[40px] overflow-hidden flex-shrink-0 bg-slate-200 flex items-center justify-center">
+            {profileImage && !imageLoadError ? (
+              <img
+                src={profileImage}
+                className="w-full h-full object-cover"
+                alt="프로필 이미지"
+                onError={() => {
+                  console.error('❌ 프로필 이미지 로드 실패');
+                  setImageLoadError(true);
+                }}
+              />
+            ) : (
+              <img src={testprofile} className="w-full h-full object-cover" alt="기본 프로필" />
+            )}
+          </div>
 
           <div className="flex flex-col gap-2.5 w-[130px] ms-auto text-right">
             <div className="flex flex-col gap-[5px]">
@@ -32,15 +82,15 @@ function SideProfileComp() {
         </div>
 
         <ul className="flex flex-col gap-5">
-          <Link to="/memberinfo" onClick={closeUserComp}>
+          <Link to="/memberinfo">
             <li className="p">나의 여행 공간</li>
           </Link>
 
-          <Link to="/board/list?type=my" onClick={closeUserComp}>
+          <Link>
             <li className="p">내가 남긴 여행 기록</li>
           </Link>
 
-          <Link to="/board/list?type=bookmark" onClick={closeUserComp}>
+          <Link>
             <li className="p">내가 저장한 여행</li>
           </Link>
           <li className=" text-red-600 cursor-pointer" onClick={handleLogout}>
