@@ -18,36 +18,29 @@ export const useLikeToggle = (boardId, initialIsLiked, refetchBoardData) => {
   }, [initialIsLiked]);
 
   const toggleLike = useCallback(async () => {
-    // 인증 및 ID 체크
-    if (!isAuthenticated || !authUuid || !boardId) {
-      // ⭐ authUuid 체크
-      console.warn('인증 또는 ID 정보 부족으로 좋아요 토글 불가');
-      return;
-    }
+    if (!isAuthenticated || !authUuid || !boardId) return;
 
     setIsLoading(true);
 
     try {
-      // ⭐ 1. 백엔드 API 경로/메서드에 맞춤 (POST /board/{boardId}/like)
       const response = await apiClient.post(`/board/${boardId}/like`, null, {
-        headers: {
-          // ⭐ 2. 백엔드 인증 필터가 요구하는 헤더 추가
-          'X-AUTH-UUID': authUuid,
-        },
+        headers: { 'X-AUTH-UUID': authUuid },
       });
 
-      // ⭐ 3. 성공 시, 로컬 상태만 토글 (백엔드가 등록/취소 처리했음)
+      // ✅ [해결책 1] alert을 절대 사용하지 마세요. (렌더링 충돌의 주범)
+      console.log('좋아요 처리 완료:', response.data);
+
+      // ✅ [해결책 2] 로컬 상태 업데이트
       setIsLiked((prev) => !prev);
 
-      // 4. 게시물 데이터를 다시 불러와 최신 좋아요 수 반영
+      // ✅ [해결책 3] 데이터 갱신을 0초 뒤로 미룸 (리액트 사이클 분리)
       if (refetchBoardData) {
-        refetchBoardData();
+        setTimeout(() => {
+          refetchBoardData();
+        }, 0);
       }
-
-      alert(response.data); // 서버 응답 메시지 (등록됨/취소됨) 표시
     } catch (error) {
-      console.error('좋아요 토글 실패:', error);
-      alert('좋아요 처리 중 오류가 발생했습니다.');
+      console.error('좋아요 실패:', error);
     } finally {
       setIsLoading(false);
     }

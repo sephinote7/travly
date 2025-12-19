@@ -76,7 +76,7 @@ export default function RecentBoardList() {
           새로 올라온 이야기
         </h2>
         <Link
-          to="/board?size=9&page=0&orderby=updated"
+          to="/board?size=10&page=0&orderby=updated"
           className="text-sky-400 font-bold hover:text-sky-900 absolute right-0 top-0"
         >
           + 더 많은 글 보기

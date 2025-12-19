@@ -11,7 +11,8 @@ function LikeButtonComp({ boardId, initialIsLiked, refetchBoardData }) {
 
   const buttonText = isLiked ? '❤️ 좋아요 취소' : '🤍 좋아요';
 
-  const handleClick = () => {
+  const handleClick = (e) => {
+    e.preventDefault();
     if (!isAuthenticated) {
       // [!] 프론트엔드에서는 로그인 모달을 띄우는 것이 더 사용자 친화적일 수 있습니다.
       alert('로그인 후 이용 가능합니다.');
