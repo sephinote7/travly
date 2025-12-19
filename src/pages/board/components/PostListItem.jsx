@@ -1,30 +1,30 @@
 // src/pages/board/components/post/PostListItem.jsx
-import { Link } from "react-router-dom";
+import { Link } from 'react-router-dom';
 
-const API_BASE = "http://localhost:8080/api/travly";
+const API_BASE = 'http://localhost:8080/api/travly';
 
 function formatKoreanDate(iso) {
-  if (!iso) return "";
+  if (!iso) return '';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
   return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(
     2,
-    "0"
-  )}/${String(d.getDate()).padStart(2, "0")}`;
+    '0'
+  )}/${String(d.getDate()).padStart(2, '0')}`;
 }
 
 function getThumbUrl(post) {
   if (post?.thumbnailFilename) {
     return `${API_BASE}/file/${post.thumbnailFilename}`;
   }
-  return "https://via.placeholder.com/420x220?text=No+Image";
+  return 'https://via.placeholder.com/420x220?text=No+Image';
 }
 
 function getProfileUrl(post) {
   if (post?.memberThumbail) {
     return `${API_BASE}/file/${post.memberThumbail}`;
   }
-  return "https://via.placeholder.com/36?text=U";
+  return 'https://via.placeholder.com/36?text=U';
 }
 
 export default function PostListItem({ post }) {
@@ -42,7 +42,7 @@ export default function PostListItem({ post }) {
             </Link>
 
             <div className="boardCard__meta">
-              <span>{post.placeTitle || "여행 코스"}</span>
+              <span>{post.placeTitle || '여행 코스'}</span>
               <span className="dot">•</span>
               <span>{formatKoreanDate(post.updatedAt)}</span>
             </div>

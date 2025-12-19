@@ -1,108 +1,40 @@
 // src/pages/board/ViewComp.jsx
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import '../../styles/ViewComp.css';
-import apiClient from '../../services/apiClient';
 import { useKakaoMap } from '../../hooks/useKakaoMap';
-import { redrawMarkersAndPolyline } from '../../utils/mapDrawingUtils';
+import apiClient from '../../services/apiClient';
 import LikeButtonComp from '../../common/LikeButtonComp';
+import { useBoardLike } from './view/useBoardLike';
 
-const MARKER_COLORS = ['#3b82f6', '#10b981', '#f97316', '#ec4899', '#6366f1'];
-const API_BASE = 'http://localhost:8080/api/travly';
-
-// 외부 placeholder DNS 이슈 방지용
-const FALLBACK_AVATAR =
-  'data:image/svg+xml;utf8,' +
-  encodeURIComponent(`
-    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40">
-      <rect width="100%" height="100%" rx="20" ry="20" fill="#eef2f7"/>
-      <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle"
-            font-family="Arial" font-size="14" fill="#64748b">U</text>
-    </svg>
-  `);
-
-function formatDateTime(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  const yy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  const hh = String(d.getHours()).padStart(2, '0');
-  const mi = String(d.getMinutes()).padStart(2, '0');
-  return `${yy}.${mm}.${dd} ${hh}:${mi}`;
-}
-
-function normalizeFilename(name) {
-  if (!name) return name;
-  return name.replace(/(\.(jpg|jpeg|png|webp))\.\2$/i, '.$2');
-}
-
-function buildFileUrl(filename) {
-  if (!filename) return '';
-  return `${API_BASE}/file/${normalizeFilename(filename)}`;
-}
-
-// ✅ 네가 준 board 상세 JSON 구조에 맞춘 매핑
-function mapBoardApiToViewModel(apiBoard) {
-  const createdAtStr = formatDateTime(apiBoard.createdAt);
-  const updatedAtStr = formatDateTime(apiBoard.updatedAt);
-
-  const writer = {
-    id: apiBoard.member?.id,
-    nickname: apiBoard.member?.nickname || '익명',
-    badgeName: apiBoard.member?.badge?.name || '',
-    profileImageUrl: apiBoard.member?.profileImage
-      ? buildFileUrl(apiBoard.member.profileImage)
-      : FALLBACK_AVATAR,
-  };
-
-  const places =
-    (apiBoard.places || [])
-      .slice()
-      .sort((a, b) => (a.orderNum ?? 0) - (b.orderNum ?? 0))
-      .map((p) => {
-        const files = (p.files || [])
-          .slice()
-          .sort((a, b) => (a.orderNum ?? 0) - (b.orderNum ?? 0))
-          .map((f) => f?.file?.filename)
-          .filter(Boolean);
-
-        // 썸네일: t_ 있으면 우선, 없으면 첫 파일
-        const thumb = files.find((fn) => fn.startsWith('t_')) || files[0] || '';
-
-        return {
-          id: p.id,
-          name: p.title,
-          content: p.content || '',
-          orderNum: p.orderNum ?? 0,
-          x: p.x,
-          y: p.y,
-          thumbnailUrl: thumb ? buildFileUrl(thumb) : '',
-          photos: files.map((fn) => ({ url: buildFileUrl(fn) })),
-        };
-      }) || [];
-
-  return {
-    id: apiBoard.id,
-    title: apiBoard.title || '',
-    viewCount: apiBoard.viewCount ?? 0,
-    likeCount: apiBoard.likeCount ?? 0,
-    createdAtStr,
-    updatedAtStr,
-    writer,
-    places,
-  };
-}
+import { MARKER_COLORS } from './view/viewMappers';
+import { useBoardDetail } from './view/useBoardDetail';
+import { useBoardComments } from './view/useBoardComments';
+import { useKakaoBoardMap } from './view/useKakaoBoardMap';
+import ViewComments from './view/ViewComments';
 
 export default function ViewComp() {
   const navigate = useNavigate();
   const { id } = useParams(); // /board/:id
+  const { isLiked, setIsLiked, refetchLike } = useBoardLike(id);
 
-  const [loading, setLoading] = useState(true);
-  const [board, setBoard] = useState(null);
-  const [rawBoard, setRawBoard] = useState(null);
+  // ✅ 1) 게시글 상세 로드 (훅)
+  const { loading, board, rawBoard, fetchBoardData } = useBoardDetail(id);
 
+  // ✅ 2) 댓글 (훅)
+  const {
+    comments,
+    commentText,
+    setCommentText,
+    commentPage,
+    commentLast,
+    commentLoading,
+    commentPosting,
+    fetchComments,
+    createComment,
+  } = useBoardComments(board?.id);
+
+  // ✅ 3) 썸네일 선택
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   // Kakao map
@@ -110,152 +42,14 @@ export default function ViewComp() {
   const markersRef = useRef([]);
   const polylineRef = useRef(null);
 
-  // 댓글 상태
-  const [comments, setComments] = useState([]);
-  const [commentText, setCommentText] = useState('');
-  const [commentPosting, setCommentPosting] = useState(false);
-
-  const [commentPage, setCommentPage] = useState(0);
-  const [commentLast, setCommentLast] = useState(false);
-  const [commentLoading, setCommentLoading] = useState(false);
-
-  // 1) 게시글 상세 로드
-  async function fetchBoardData({ silent = false } = {}) {
-    try {
-      if (!silent) setLoading(true); // ⭐ 최초 로딩만
-      const res = await apiClient.get(`/board/${id}`);
-
-      setRawBoard(res.data);
-      setBoard(mapBoardApiToViewModel(res.data));
-    } catch (e) {
-      console.error(e);
-    } finally {
-      if (!silent) setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    if (!id) {
-      setLoading(false);
-      return;
-    }
-    fetchBoardData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
-
-  // 2) 지도 마커/폴리라인 그리기
-  useEffect(() => {
-    if (!board?.places?.length) return;
-
-    let cancelled = false;
-    let t = null;
-
-    const draw = () => {
-      if (cancelled) return;
-
-      if (!mapRef.current || !window.kakao) {
-        t = setTimeout(draw, 100);
-        return;
-      }
-
-      redrawMarkersAndPolyline(
-        mapRef,
-        board.places,
-        markersRef,
-        polylineRef,
-        MARKER_COLORS
-      );
-
-      // 첫 장소로 센터
-      const first = board.places[0];
-      if (first?.y != null && first?.x != null) {
-        const { kakao } = window;
-        mapRef.current.setCenter(new kakao.maps.LatLng(first.y, first.x));
-      }
-    };
-
-    draw();
-
-    return () => {
-      cancelled = true;
-      if (t) clearTimeout(t);
-    };
-  }, [board, mapRef]);
-
-  // ✅ 댓글 목록 조회 (GET /board/{boardId}/comment)
-  async function fetchComments(page = 0) {
-    if (!board?.id) return;
-    if (commentLoading) return;
-    if (page !== 0 && commentLast) return;
-
-    try {
-      setCommentLoading(true);
-
-      const res = await apiClient.get(`/board/${board.id}/comment`, {
-        params: { size: 2, page },
-      });
-
-      // Spring Page 형태를 가정: { content: [], last: boolean, ... }
-      const content = res.data?.content ?? [];
-      const last = res.data?.last ?? true;
-
-      const mapped = content.map((c) => ({
-        id: c.id,
-        writerName:
-          c.member?.nickname || c.memberNickname || c.writerName || '익명',
-        content: c.content || c.comment || '',
-        createdAt: c.createdAt || '',
-      }));
-
-      setComments((prev) => (page === 0 ? mapped : [...prev, ...mapped]));
-      setCommentLast(last);
-      setCommentPage(page);
-    } catch (err) {
-      console.error('댓글 조회 실패:', err);
-    } finally {
-      setCommentLoading(false);
-    }
-  }
-
-  // 게시글 로드되면 댓글 첫 페이지
-  useEffect(() => {
-    if (!board?.id) return;
-    setComments([]);
-    setCommentPage(0);
-    setCommentLast(false);
-    fetchComments(0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [board?.id]);
-
-  // ✅ 댓글 작성 (POST /board/{boardId}/comment)
-  async function handleCreateComment() {
-    const text = commentText.trim();
-    if (!text) {
-      alert('댓글을 입력해 주세요.');
-      return;
-    }
-    if (!board?.id) return;
-
-    try {
-      setCommentPosting(true);
-
-      const res = await apiClient.post(`/board/${board.id}/comment`, {
-        comment: text, // ✅ 서버가 쓰는 필드명
-        // memberId: 1,         // ✅ 서버가 요구하면 추가 (응답엔 있으니까 필요할 수도 있음)
-      });
-
-      setCommentText('');
-      setCommentLast(false);
-      await fetchComments(0);
-
-      return res.data;
-    } catch (err) {
-      console.error('댓글 등록 실패:', err.response?.data || err);
-      alert('한글당 하나만 작성할수 있습니다.');
-    } finally {
-      setCommentPosting(false);
-    }
-  }
+  // ✅ 4) 지도 렌더링 (훅)
+  useKakaoBoardMap({
+    mapRef,
+    places: board?.places,
+    markersRef,
+    polylineRef,
+    markerColors: MARKER_COLORS,
+  });
 
   async function handleDelete() {
     const ok = window.confirm('정말 삭제하시겠습니까?');
@@ -271,12 +65,13 @@ export default function ViewComp() {
     }
   }
 
+  async function handleCreateComment() {
+    await createComment(); // ✅ commentText는 훅에서 이미 들고 있음
+  }
+
   if (loading) return <div className="view-root">로딩 중...</div>;
   if (!board)
     return <div className="view-root">데이터를 불러올 수 없습니다.</div>;
-
-  // ⭐ 서버에서 내려준 좋아요 여부 (필드명에 맞게 하나만 쓰면 됨)
-  const initialIsLiked = Boolean(rawBoard?.isLiked ?? rawBoard?.liked ?? false);
 
   const selectedPlace = board.places[selectedIndex] ||
     board.places[0] || { name: '', content: '', photos: [] };
@@ -347,11 +142,13 @@ export default function ViewComp() {
               </div>
             </div>
           </div>
-          {/* ✅ 좋아요 / 북마크 라인 */}
+
+          {/* 좋아요 / 북마크 */}
           <div className="view-actions-row">
             <LikeButtonComp
               boardId={board.id}
-              initialIsLiked={initialIsLiked}
+              initialIsLiked={isLiked}
+              onLikeChange={setIsLiked}
               refetchBoardData={() => fetchBoardData({ silent: true })}
             />
 
@@ -450,59 +247,17 @@ export default function ViewComp() {
         </section>
 
         {/* 댓글 */}
-        <section className="view-box view-comments">
-          <h3 className="view-comments-title">댓글 ({comments.length})개</h3>
-
-          <div className="view-comment-input-wrap">
-            <textarea
-              className="view-comment-textarea"
-              placeholder="댓글을 입력해 주세요."
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-            />
-            <div className="view-comment-submit-wrap">
-              <button
-                className="view-comment-submit-btn"
-                type="button"
-                onClick={handleCreateComment}
-                disabled={commentPosting}
-              >
-                {commentPosting ? '등록 중...' : '등록'}
-              </button>
-            </div>
-          </div>
-
-          <ul className="view-comment-list">
-            {comments.map((c) => (
-              <li key={c.id} className="view-comment-item">
-                <div className="view-comment-header">
-                  <div className="view-comment-avatar">
-                    {c.writerName?.[0] || '?'}
-                  </div>
-                  <div>
-                    <div className="view-comment-writer">{c.writerName}</div>
-                    <div className="view-comment-date">
-                      {formatDateTime(c.createdAt)}
-                    </div>
-                  </div>
-                </div>
-                <p className="view-comment-content">{c.content}</p>
-              </li>
-            ))}
-          </ul>
-
-          {!commentLast && (
-            <div style={{ textAlign: 'center', marginTop: 12 }}>
-              <button
-                type="button"
-                onClick={() => fetchComments(commentPage + 1)}
-                disabled={commentLoading}
-              >
-                {commentLoading ? '불러오는 중...' : '댓글 더 보기'}
-              </button>
-            </div>
-          )}
-        </section>
+        <ViewComments
+          comments={comments}
+          commentText={commentText}
+          setCommentText={setCommentText}
+          commentPosting={commentPosting}
+          commentPage={commentPage}
+          commentLast={commentLast}
+          commentLoading={commentLoading}
+          onSubmit={handleCreateComment}
+          onLoadMore={fetchComments}
+        />
       </main>
     </div>
   );
