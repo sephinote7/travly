@@ -191,7 +191,7 @@ function SearchPanel({
               disabled={safePage === 1}
               onClick={() => onPageChange(safePage - 1)}
             >
-              ‹
+              .
             </button>
 
             {/* 페이지 번호 (최대 5개) */}
