@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import HeaderComp from './HeaderComp';
 import FooterComp from './FooterComp';
@@ -11,9 +11,41 @@ const MainLayout = () => {
   const location = useLocation();
   const HIDDEN_PATH_PREFIXES = ['/board/write', '/board/modify'];
   const isHiddenPath = HIDDEN_PATH_PREFIXES.some((prefix) => location.pathname.startsWith(prefix));
+  const sideProfileRef = useRef(null);
 
   // ⭐️ Context에서 필요한 상태와 함수를 가져옵니다.
   const { userData, isUserCompOpen, closeUserComp } = useAuth();
+
+  // 외부 클릭 및 스크롤 시 사이드 프로필 닫기
+  useEffect(() => {
+    if (!isUserCompOpen) return;
+
+    const handleClickOutside = (event) => {
+      if (sideProfileRef.current && !sideProfileRef.current.contains(event.target)) {
+        // 헤더의 사용자 아이콘 클릭은 제외
+        const userIcon = event.target.closest('[alt="사용자"]');
+        if (!userIcon) {
+          closeUserComp();
+        }
+      }
+    };
+
+    const handleScroll = () => {
+      closeUserComp();
+    };
+
+    // 약간의 지연을 두어 현재 클릭 이벤트가 처리된 후 리스너 추가
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('scroll', handleScroll, true);
+    }, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', handleScroll, true);
+    };
+  }, [isUserCompOpen, closeUserComp]);
 
   return (
     <>
@@ -22,7 +54,7 @@ const MainLayout = () => {
       {/* ========================================================== */}
       {/* ⭐️ 유저 컴포넌트 조건부 렌더링 (Context 상태 사용) */}
       {isUserCompOpen && (
-        <div className="fixed right-0 top-[80px] z-50">
+        <div ref={sideProfileRef} className="fixed right-0 top-[80px] z-50">
           {userData.isLoggedIn ? (
             // 로그인 상태: SideProfileComp 렌더링
             // SideProfileComp는 Context에서 유저 정보와 로그아웃 함수를 가져옵니다.

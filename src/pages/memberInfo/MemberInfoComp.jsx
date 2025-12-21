@@ -2,129 +2,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../common/AuthStateContext';
-import { getMemberInfo } from '../../util/memberService';
+import { getMemberInfo, getMyBoards, getBookmarkedBoards } from '../../util/memberService';
 import { getFileUrl } from '../../util/fileService';
 
 // 이미지 경로 수정
 import defaultAvatar from '../../common/images/Logo2.png';
-import thumb1 from '../../common/images/forest1.png';
-import thumb2 from '../../common/images/forest2.png';
-import thumb3 from '../../common/images/forest3.png';
-
-const PROFILE_STORAGE_KEY = 'travlyProfile';
-
-// 내가 작성한 글 더미 데이터 (5개)
-const myPostsDummy = [
-  {
-    id: 1,
-    title: '겨울 은하수가 쏟아지는 밤하늘',
-    dateTime: '2025/12/03 11:10',
-    location: '전북 익산시',
-    distance: '157km',
-    tags: ['#한국의_밤하늘', '#별투어', '#2박3일', '#자연', '#여행지_느낌'],
-    thumbnail: thumb1,
-  },
-  {
-    id: 2,
-    title: '제주 겨울 드라이브 코스 총정리',
-    dateTime: '2025/11/30 09:20',
-    location: '제주 애월읍',
-    distance: '24km',
-    tags: ['#제주도', '#드라이브', '#카페투어', '#바다'],
-    thumbnail: thumb2,
-  },
-  {
-    id: 3,
-    title: '도쿄 야경 스카이라인 포인트 5곳',
-    dateTime: '2025/11/25 20:05',
-    location: '일본 도쿄',
-    distance: '12km',
-    tags: ['#도쿄', '#야경맛집', '#도시여행'],
-    thumbnail: thumb3,
-  },
-  {
-    id: 4,
-    title: '강릉 바다와 함께하는 카페 투어',
-    dateTime: '2025/11/18 14:40',
-    location: '강원 강릉시',
-    distance: '8km',
-    tags: ['#강릉', '#카페투어', '#바다뷰'],
-    thumbnail: thumb1,
-  },
-  {
-    id: 5,
-    title: '프라하 골목 산책 코스',
-    dateTime: '2025/11/10 16:00',
-    location: '체코 프라하',
-    distance: '5km',
-    tags: ['#유럽여행', '#골목산책', '#사진스팟'],
-    thumbnail: thumb2,
-  },
-];
-
-// 내가 북마크한 글 더미 데이터 (5개)
-const bookmarkedPostsDummy = [
-  {
-    id: 101,
-    title: '몽골 별빛 투어 캠핑 기록',
-    dateTime: '2025/12/04 22:15',
-    location: '몽골 울란바토르',
-    distance: '210km',
-    tags: ['#몽골', '#사막캠핑', '#별보기'],
-    thumbnail: thumb2,
-    authorName: '노마드J',
-    authorSubtitle: '별 쫓는 여행자',
-    authorLevel: 'Lv.9',
-  },
-  {
-    id: 102,
-    title: '스페인 세비야 플라멩코 거리 산책',
-    dateTime: '2025/12/02 19:40',
-    location: '스페인 세비야',
-    distance: '4km',
-    tags: ['#세비야', '#플라멩코', '#거리공연'],
-    thumbnail: thumb3,
-    authorName: 'LaVida',
-    authorSubtitle: '라틴 감성 여행러',
-    authorLevel: 'Lv.5',
-  },
-  {
-    id: 103,
-    title: '후쿠오카 온천 & 라멘 원데이 코스',
-    dateTime: '2025/11/29 13:20',
-    location: '일본 후쿠오카',
-    distance: '11km',
-    tags: ['#후쿠오카', '#온천', '#라멘'],
-    thumbnail: thumb1,
-    authorName: 'ramen_holic',
-    authorSubtitle: '먹방 여행자',
-    authorLevel: 'Lv.4',
-  },
-  {
-    id: 104,
-    title: '스위스 융프라우 눈꽃 여행',
-    dateTime: '2025/11/22 10:10',
-    location: '스위스 인터라켄',
-    distance: '18km',
-    tags: ['#스위스', '#알프스', '#설경'],
-    thumbnail: thumb2,
-    authorName: 'mountainlover',
-    authorSubtitle: '산을 닮은 사람',
-    authorLevel: 'Lv.7',
-  },
-  {
-    id: 105,
-    title: '부산 해운대 야경 & 야시장 투어',
-    dateTime: '2025/11/15 21:30',
-    location: '부산 해운대구',
-    distance: '6km',
-    tags: ['#부산', '#야시장', '#야경'],
-    thumbnail: thumb3,
-    authorName: 'sea_side',
-    authorSubtitle: '바다를 좋아하는 사람',
-    authorLevel: 'Lv.3',
-  },
-];
 
 function MemberInfoComp() {
   const navigate = useNavigate();
@@ -146,8 +28,10 @@ function MemberInfoComp() {
   const [imageLoadError, setImageLoadError] = useState(false);
   const [isMemberNotFound, setIsMemberNotFound] = useState(false);
 
-  const [myPosts] = useState(myPostsDummy);
-  const [bookmarkedPosts] = useState(bookmarkedPostsDummy);
+  const [myPosts, setMyPosts] = useState([]);
+  const [bookmarkedPosts, setBookmarkedPosts] = useState([]);
+  const [loadingMyPosts, setLoadingMyPosts] = useState(false);
+  const [loadingBookmarkedPosts, setLoadingBookmarkedPosts] = useState(false);
 
   useEffect(() => {
     // userData가 없으면 초기화
@@ -405,6 +289,62 @@ function MemberInfoComp() {
     location.key,
   ]);
 
+  // 내가 작성한 글 목록 불러오기
+  useEffect(() => {
+    const loadMyPosts = async () => {
+      if (!userData?.isLoggedIn || !userData?.memberId) {
+        setMyPosts([]);
+        return;
+      }
+
+      setLoadingMyPosts(true);
+      try {
+        const result = await getMyBoards(userData.memberId, { size: 5, page: 0 });
+        if (result.success && result.data) {
+          setMyPosts(result.data);
+        } else {
+          console.warn('내가 작성한 글 목록 불러오기 실패:', result.error);
+          setMyPosts([]);
+        }
+      } catch (error) {
+        console.error('내가 작성한 글 목록 불러오기 중 오류:', error);
+        setMyPosts([]);
+      } finally {
+        setLoadingMyPosts(false);
+      }
+    };
+
+    loadMyPosts();
+  }, [userData?.isLoggedIn, userData?.memberId]);
+
+  // 북마크한 글 목록 불러오기
+  useEffect(() => {
+    const loadBookmarkedPosts = async () => {
+      if (!userData?.isLoggedIn) {
+        setBookmarkedPosts([]);
+        return;
+      }
+
+      setLoadingBookmarkedPosts(true);
+      try {
+        const result = await getBookmarkedBoards({ size: 5, page: 0 });
+        if (result.success && result.data) {
+          setBookmarkedPosts(result.data);
+        } else {
+          console.warn('북마크한 글 목록 불러오기 실패:', result.error);
+          setBookmarkedPosts([]);
+        }
+      } catch (error) {
+        console.error('북마크한 글 목록 불러오기 중 오류:', error);
+        setBookmarkedPosts([]);
+      } finally {
+        setLoadingBookmarkedPosts(false);
+      }
+    };
+
+    loadBookmarkedPosts();
+  }, [userData?.isLoggedIn]);
+
   const handleProfileEdit = () => {
     navigate('/memberinfo/modify');
   };
@@ -580,7 +520,13 @@ function MemberInfoComp() {
                   [전체 글 보기]
                 </button>
               </div>
-              <div className="space-y-4">{myPosts.map((post) => renderFrameItem(post, true))}</div>
+              {loadingMyPosts ? (
+                <div className="text-center py-8 text-slate-500">로딩 중...</div>
+              ) : myPosts.length > 0 ? (
+                <div className="space-y-4">{myPosts.map((post) => renderFrameItem(post, true))}</div>
+              ) : (
+                <div className="text-center py-8 text-slate-400">작성한 글이 없습니다.</div>
+              )}
             </div>
 
             {/* 오른쪽: 내가 북마크 한 글 */}
@@ -595,7 +541,13 @@ function MemberInfoComp() {
                   [전체 글 보기]
                 </button>
               </div>
-              <div className="space-y-4">{bookmarkedPosts.map((post) => renderFrameItem(post, false))}</div>
+              {loadingBookmarkedPosts ? (
+                <div className="text-center py-8 text-slate-500">로딩 중...</div>
+              ) : bookmarkedPosts.length > 0 ? (
+                <div className="space-y-4">{bookmarkedPosts.map((post) => renderFrameItem(post, false))}</div>
+              ) : (
+                <div className="text-center py-8 text-slate-400">북마크한 글이 없습니다.</div>
+              )}
             </div>
           </section>
         </div>

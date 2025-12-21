@@ -1,5 +1,6 @@
 // src/util/memberService.js
 import apiClient from './apiClient';
+import { getFileUrl } from './fileService';
 
 /**
  * 회원 관련 API 서비스
@@ -263,7 +264,7 @@ export const createOrUpdateMember = async (memberData) => {
 
 /**
  * authUuid로 회원 정보 조회
- * GET /api/travly/member/by-auth/{authUuid}
+ * GET /api/travly/member/auth/{authUuid}
  *
  * @param {string} authUuid - 인증 사용자 UUID (필수)
  * @returns {Promise<{success: boolean, data?: Object, error?: string, status?: number}>}
@@ -287,9 +288,8 @@ export const getMemberInfoByAuthUuid = async (authUuid) => {
 
   try {
     // 회원 정보 조회
-    // 현재 로그인한 사용자의 정보를 가져오는 엔드포인트 사용
-    // JWT 토큰에서 자동으로 현재 사용자를 인식
-    const response = await apiClient.get(`/member`);
+    // authUuid를 경로 변수로 전달하여 회원 정보 조회
+    const response = await apiClient.get(`/member/auth/${authUuid}`);
 
     // 성공 응답: 회원 정보 객체 반환
     return {
@@ -305,6 +305,17 @@ export const getMemberInfoByAuthUuid = async (authUuid) => {
         success: false,
         error: errorMessage,
         status: 400,
+      };
+    }
+
+    // 404 에러 처리: 회원 정보가 없을 수 있음
+    if (error.response?.status === 404) {
+      const errorMessage = error.response?.data?.message || `회원 정보를 찾을 수 없습니다: ${authUuid}`;
+      console.error('회원 정보 조회 실패 (404):', errorMessage);
+      return {
+        success: false,
+        error: errorMessage,
+        status: 404,
       };
     }
 
@@ -383,6 +394,150 @@ export const checkEmail = async (email) => {
     return {
       success: false,
       error: error.response?.data?.message || error.message || '이메일 중복 확인 중 오류가 발생했습니다.',
+      status: error.response?.status,
+    };
+  }
+};
+
+/**
+ * 내가 작성한 글 목록 조회
+ * GET /api/travly/board/member/{memberId}?size={size}&page={page}
+ *
+ * @param {number|string} memberId - 회원 ID (필수)
+ * @param {Object} options - 옵션 객체
+ * @param {number} options.size - 페이지 크기 (기본값: 5)
+ * @param {number} options.page - 페이지 번호 (0부터 시작, 기본값: 0)
+ * @returns {Promise<{success: boolean, data?: Array, totalPages?: number, error?: string, status?: number}>}
+ *
+ * 성공 응답:
+ * - data: 게시글 목록 배열
+ * - totalPages: 전체 페이지 수
+ */
+export const getMyBoards = async (memberId, options = {}) => {
+  // 입력값 검증
+  if (!memberId) {
+    return {
+      success: false,
+      error: '회원 ID가 필요합니다.',
+      status: 400,
+    };
+  }
+
+  const { size = 5, page = 0 } = options;
+
+  try {
+    const response = await apiClient.get(`/board/member/${memberId}`, {
+      params: {
+        size,
+        page,
+      },
+    });
+
+    // Spring Page 객체에서 content와 totalPages 추출
+    const boardList = (response.data?.content || []).map((board) => ({
+      id: board.id,
+      title: board.title,
+      dateTime: board.updatedAt
+        ? new Date(board.updatedAt).toLocaleString('ko-KR', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        : '',
+      location: board.placeTitle || '',
+      distance: '', // 서버에서 제공하지 않으면 빈 문자열
+      tags: board.filterItemNames || [],
+      thumbnail: board.thumbnailFilename
+        ? getFileUrl({ filename: board.thumbnailFilename }, { thumbnail: false })
+        : null,
+      authorName: board.memberNickname || '',
+      authorSubtitle: '', // 서버에서 제공하지 않으면 빈 문자열
+      authorLevel: board.badgeId ? `Lv.${board.badgeId}` : '',
+      viewCount: board.viewCount || 0,
+      likeCount: board.likeCount || 0,
+    }));
+
+    return {
+      success: true,
+      data: boardList,
+      totalPages: response.data?.totalPages || 0,
+      totalElements: response.data?.totalElements || 0,
+    };
+  } catch (error) {
+    console.error('내가 작성한 글 목록 조회 실패:', error);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message || '내가 작성한 글 목록을 불러오는 중 오류가 발생했습니다.',
+      status: error.response?.status,
+    };
+  }
+};
+
+/**
+ * 북마크한 글 목록 조회
+ * GET /api/travly/board/bookmark?size={size}&page={page}
+ *
+ * @param {Object} options - 옵션 객체
+ * @param {number} options.size - 페이지 크기 (기본값: 5)
+ * @param {number} options.page - 페이지 번호 (0부터 시작, 기본값: 0)
+ * @returns {Promise<{success: boolean, data?: Array, totalPages?: number, error?: string, status?: number}>}
+ *
+ * 성공 응답:
+ * - data: 북마크한 게시글 목록 배열
+ * - totalPages: 전체 페이지 수
+ *
+ * 주의: 인증이 필요합니다 (JWT 토큰이 자동으로 헤더에 추가됨)
+ */
+export const getBookmarkedBoards = async (options = {}) => {
+  const { size = 5, page = 0 } = options;
+
+  try {
+    const response = await apiClient.get('/board/bookmark', {
+      params: {
+        size,
+        page,
+      },
+    });
+
+    // Spring Page 객체에서 content와 totalPages 추출
+    const boardList = (response.data?.content || []).map((board) => ({
+      id: board.id,
+      title: board.title,
+      dateTime: board.updatedAt
+        ? new Date(board.updatedAt).toLocaleString('ko-KR', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        : '',
+      location: board.placeTitle || '',
+      distance: '', // 서버에서 제공하지 않으면 빈 문자열
+      tags: board.filterItemNames || [],
+      thumbnail: board.thumbnailFilename
+        ? getFileUrl({ filename: board.thumbnailFilename }, { thumbnail: false })
+        : null,
+      authorName: board.memberNickname || '',
+      authorSubtitle: '', // 서버에서 제공하지 않으면 빈 문자열
+      authorLevel: board.badgeId ? `Lv.${board.badgeId}` : '',
+      viewCount: board.viewCount || 0,
+      likeCount: board.likeCount || 0,
+    }));
+
+    return {
+      success: true,
+      data: boardList,
+      totalPages: response.data?.totalPages || 0,
+      totalElements: response.data?.totalElements || 0,
+    };
+  } catch (error) {
+    console.error('북마크한 글 목록 조회 실패:', error);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message || '북마크한 글 목록을 불러오는 중 오류가 발생했습니다.',
       status: error.response?.status,
     };
   }
