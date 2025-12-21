@@ -240,6 +240,7 @@ function Timeline({
         }
         res = await apiClient.put(`/board/${boardId}`, payload);
         alert("수정 성공!");
+        onSaved?.();
       } else {
         res = await apiClient.post("/board", payload);
         alert("작성 완료!");
