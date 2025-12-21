@@ -16,8 +16,7 @@ function HeaderComp() {
   const [isNoticeOpen, setIsNoticeOpen] = useState(false);
   const [hasNewNotice, setHasNewNotice] = useState(true);
 
-  const { userData, isUserCompOpen, toggleUserComp, openLoginModal } =
-    useAuth();
+  const { userData, isUserCompOpen, toggleUserComp, openLoginModal } = useAuth();
 
   // 사람 아이콘 클릭 시: 로그인 여부에 따라 동작 분기
   const handleUserClick = () => {
@@ -41,38 +40,40 @@ function HeaderComp() {
   };
 
   return (
-    <div className="container-fluid flex justify-between items-center px-[40px] h-[80px] relative">
-      <Link to="/">
-        <div className="flex h-[60px] ">
-          <img src={TravlyLogo02} alt="Travly 로고 2" />
-          <img src={TravLyLogo01} alt="Travly 로고 1" />
-        </div>
-      </Link>
+    <div className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200">
+      <div className="container-fluid flex justify-between items-center px-[40px] h-[80px] relative">
+        <Link to="/">
+          <div className="flex h-[60px] ">
+            <img src={TravlyLogo02} alt="Travly 로고 2" />
+            <img src={TravLyLogo01} alt="Travly 로고 1" />
+          </div>
+        </Link>
 
-      <ul className="flex w-[258px] h-[48px] justify-between">
-        <li>
-          <Link to="/board">
-            <img src={utilSearch} alt="검색" />
-          </Link>
-        </li>
-        <li>
-          <Link to="/board/write">
-            <img src={utilPen} alt="글쓰기" />
-          </Link>
-        </li>
-        {/* 사람 아이콘 */}
-        <li className="cursor-pointer relative" onClick={handleUserClick}>
-          <img src={utilUser} alt="사용자" />
-        </li>
-        {/* 알림 종 아이콘 */}
-        <li className="cursor-pointer relative" onClick={toggleNotice}>
-          <img src={isNoticeOpen ? utilbellon : utilBell} alt="알림" />
-          {hasNewNotice && (
-            <div className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
-          )}
-          {isNoticeOpen && <NoticeComp />}
-        </li>
-      </ul>
+        <ul className="flex w-[258px] h-[48px] justify-between">
+          <li>
+            <Link to="/board">
+              <img src={utilSearch} alt="검색" />
+            </Link>
+          </li>
+          <li>
+            <Link to="/board/write">
+              <img src={utilPen} alt="글쓰기" />
+            </Link>
+          </li>
+          {/* 사람 아이콘 */}
+          <li className="cursor-pointer relative" onClick={handleUserClick}>
+            <img src={utilUser} alt="사용자" />
+          </li>
+          {/* 알림 종 아이콘 */}
+          <li className="cursor-pointer relative" onClick={toggleNotice}>
+            <img src={isNoticeOpen ? utilbellon : utilBell} alt="알림" />
+            {hasNewNotice && (
+              <div className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
+            )}
+            {isNoticeOpen && <NoticeComp />}
+          </li>
+        </ul>
+      </div>
     </div>
   );
 }

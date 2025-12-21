@@ -10,9 +10,7 @@ import { AuthProvider, useAuth } from './AuthStateContext'; // ⭐️ Context �
 const MainLayout = () => {
   const location = useLocation();
   const HIDDEN_PATH_PREFIXES = ['/board/write', '/board/modify'];
-  const isHiddenPath = HIDDEN_PATH_PREFIXES.some((prefix) =>
-    location.pathname.startsWith(prefix)
-  );
+  const isHiddenPath = HIDDEN_PATH_PREFIXES.some((prefix) => location.pathname.startsWith(prefix));
 
   // ⭐️ Context에서 필요한 상태와 함수를 가져옵니다.
   const { userData, isUserCompOpen, closeUserComp } = useAuth();
@@ -24,7 +22,7 @@ const MainLayout = () => {
       {/* ========================================================== */}
       {/* ⭐️ 유저 컴포넌트 조건부 렌더링 (Context 상태 사용) */}
       {isUserCompOpen && (
-        <div className="absolute right-0 top-[72px] z-50">
+        <div className="fixed right-0 top-[80px] z-50">
           {userData.isLoggedIn ? (
             // 로그인 상태: SideProfileComp 렌더링
             // SideProfileComp는 Context에서 유저 정보와 로그아웃 함수를 가져옵니다.
@@ -41,7 +39,7 @@ const MainLayout = () => {
           Layout에서 조건부 렌더링 로직을 담당하게 됩니다. 
           따라서 이 코드는 위에 통합되어 삭제됩니다. */}
       {/* {!isHiddenPath && <SideProfileComp />} */}
-      <main>
+      <main className="pt-[80px]">
         <Outlet />
       </main>
       {!isHiddenPath && <FooterComp />}
