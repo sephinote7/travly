@@ -83,3 +83,5 @@ export const checkNicknameAvailable = async (nickname, currentUserId = null) => 
   return { available: data.length === 0 };
 };
 
+
+
