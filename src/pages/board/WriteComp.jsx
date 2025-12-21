@@ -8,12 +8,13 @@ import PlaceDetailPanel from "./components/PlaceDetailPanel";
 import { fetchTourPlaceDetail } from "../../services/tourApiService";
 import "../../styles/PlannerMap.css";
 import TravelCategoryModal from "./components/TravelCategoryModal";
+import { useNavigate } from "react-router-dom";
 
 const TRIP_META_KEY = "travly.tripMeta";
 
 function WriteComp({ mode = "write", initialData }) {
   // ✅ F5 유지: localStorage에서 tripMeta 복원
-
+  const navigate = useNavigate();
   const [tripMeta, setTripMeta] = useState(null);
 
   useEffect(() => {
@@ -24,6 +25,11 @@ function WriteComp({ mode = "write", initialData }) {
     setTripMeta(null);
     setShowIntroModal(true);
   }, [mode]);
+
+  const handleAfterSave = () => {
+    localStorage.removeItem(TRIP_META_KEY); // 선택
+    navigate("/"); // ⚠️ 메인 페이지 경로 (보통 / 또는 /board)
+  };
 
   const [showIntroModal, setShowIntroModal] = useState(true);
 
@@ -292,6 +298,7 @@ function WriteComp({ mode = "write", initialData }) {
             boardId={initialData?.boardId}
             initialTripTitle={initialData?.tripTitle || ""}
             initialDrafts={initialData?.drafts || {}}
+            onSaved={handleAfterSave}
           />
         </div>
       </div>

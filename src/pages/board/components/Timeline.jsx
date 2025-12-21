@@ -1,7 +1,7 @@
 // src/components/Timeline.jsx
-import { useState, useEffect, useRef } from 'react';
-import '../../../styles/Timeline.css';
-import apiClient from '../../../services/apiClient';
+import { useState, useEffect, useRef } from "react";
+import "../../../styles/Timeline.css";
+import apiClient from "../../../services/apiClient";
 
 function Timeline({
   selectedPlaces,
@@ -15,38 +15,39 @@ function Timeline({
   onItemToggle,
   onClearAll,
   tripMeta, // 아직은 안 쓰지만 남겨둠
-  mode = 'create', // 'create' | 'edit'
-  initialTripTitle = '',
+  mode = "create", // 'create' | 'edit'
+  initialTripTitle = "",
   initialDrafts = {}, // { [routeId]: { photos, title, text, fileIds } }
   boardId, // edit 모드일 때 필요
+  onSaved,
 }) {
   // =========================
   // 1. 상태
   // =========================
   const [tripTitle, setTripTitle] = useState(initialTripTitle);
 
-   const hydratedRef = useRef(false);
+  const hydratedRef = useRef(false);
 
   const [drafts, setDrafts] = useState(initialDrafts);
   const [savedMap, setSavedMap] = useState({});
   const [photoIndexMap, setPhotoIndexMap] = useState({});
   useEffect(() => {
-    console.log('[Timeline] selectedPlaces length:', selectedPlaces?.length);
-    console.log('[Timeline] first place:', selectedPlaces?.[0]);
+    console.log("[Timeline] selectedPlaces length:", selectedPlaces?.length);
+    console.log("[Timeline] first place:", selectedPlaces?.[0]);
   }, [selectedPlaces]);
 
   // 🔥 edit 모드에서 initial 값 동기화
   useEffect(() => {
-    setTripTitle(initialTripTitle || '');
+    setTripTitle(initialTripTitle || "");
   }, [initialTripTitle]);
 
   useEffect(() => {
-    if (mode !== 'edit') return;
-   if (!boardId) return;
-   if (hydratedRef.current) return;
-   setDrafts(initialDrafts || {});
-   hydratedRef.current = true;
- }, [mode, boardId]);
+    if (mode !== "edit") return;
+    if (!boardId) return;
+    if (hydratedRef.current) return;
+    setDrafts(initialDrafts || {});
+    hydratedRef.current = true;
+  }, [mode, boardId]);
 
   const getRouteId = (p, idx) => {
     const baseId = p.placeId ?? p.id; // db 복원: placeId, 검색 추가: id
@@ -61,8 +62,8 @@ function Timeline({
     setDrafts((prev) => {
       const prevDraft = prev[routeId] || {
         photos: [],
-        title: '',
-        text: '',
+        title: "",
+        text: "",
         fileIds: [],
       };
 
@@ -82,11 +83,11 @@ function Timeline({
 
     const files = Array.from(fileList).slice(0, 5);
     const formData = new FormData();
-    files.forEach((file) => formData.append('files', file));
+    files.forEach((file) => formData.append("files", file));
 
     try {
-      const res = await apiClient.post('/file', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      const res = await apiClient.post("/file", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
       const uploadedFiles = res.data || [];
@@ -96,8 +97,8 @@ function Timeline({
       setDrafts((prev) => {
         const prevDraft = prev[routeId] || {
           photos: [],
-          title: '',
-          text: '',
+          title: "",
+          text: "",
           fileIds: [],
         };
 
@@ -122,8 +123,8 @@ function Timeline({
         [routeId]: 0,
       }));
     } catch (err) {
-      console.error('사진 업로드 실패:', err);
-      alert('사진 업로드 중 오류가 발생했습니다.');
+      console.error("사진 업로드 실패:", err);
+      alert("사진 업로드 중 오류가 발생했습니다.");
     }
   };
 
@@ -132,8 +133,8 @@ function Timeline({
     setDrafts((prev) => {
       const prevDraft = prev[routeId] || {
         photos: [],
-        title: '',
-        text: '',
+        title: "",
+        text: "",
         fileIds: [],
       };
 
@@ -184,12 +185,12 @@ function Timeline({
 
   // 전체 취소 (작성/수정 분기)
   const handleCancelAll = () => {
-    if (mode === 'edit') {
+    if (mode === "edit") {
       setDrafts(initialDrafts);
       setTripTitle(initialTripTitle);
     } else {
       setDrafts({});
-      setTripTitle('');
+      setTripTitle("");
     }
     setSavedMap({});
     setPhotoIndexMap({});
@@ -200,17 +201,17 @@ function Timeline({
   // =========================
   const handleSubmitAll = async () => {
     if (!tripTitle.trim()) {
-      alert('여행 제목을 입력하세요.');
+      alert("여행 제목을 입력하세요.");
       return;
     }
 
     const places = selectedPlaces.map((p, idx) => {
       const routeId = getRouteId(p, idx);
       const draft = drafts[routeId] || {};
-      const baseId = String(p.id ?? '');
+      const baseId = String(p.id ?? "");
       return {
-        title: draft.title ?? '',
-        content: draft.text ?? '',
+        title: draft.title ?? "",
+        content: draft.text ?? "",
         mapPlaceId: `KakaoMap_${baseId}`,
         externalId: `TourAPI_${baseId}`,
         x: Number(p.lng ?? 0), // ✅ longitude
@@ -222,31 +223,32 @@ function Timeline({
     });
 
     const payload = {
-      title: tripTitle ?? '',
+      title: tripTitle ?? "",
 
       filterItemIds: tripMeta?.filterItemIds || [],
       places,
     };
 
-    console.log('📌 서버 전송 payload:', payload);
+    console.log("📌 서버 전송 payload:", payload);
 
     try {
       let res;
-      if (mode === 'edit') {
+      if (mode === "edit") {
         if (!boardId) {
-          alert('boardId가 없습니다 (edit 모드).');
+          alert("boardId가 없습니다 (edit 모드).");
           return;
         }
         res = await apiClient.put(`/board/${boardId}`, payload);
-        alert('수정 성공!');
+        alert("수정 성공!");
       } else {
-        res = await apiClient.post('/board', payload);
-        alert('작성 완료!');
+        res = await apiClient.post("/board", payload);
+        alert("작성 완료!");
+        onSaved?.();
       }
-      console.log('🟢 서버 응답:', res.data);
+      console.log("🟢 서버 응답:", res.data);
     } catch (err) {
-      console.error('🔴 저장 실패:', err);
-      alert('저장 실패!');
+      console.error("🔴 저장 실패:", err);
+      alert("저장 실패!");
     }
   };
 
@@ -258,7 +260,7 @@ function Timeline({
       {/* 상단 제목 */}
       <div className="timeline-header">
         <h2 className="timeline-header-title">
-          {mode === 'edit' ? '여행 계획 수정' : '나의 여행계획'}
+          {mode === "edit" ? "여행 계획 수정" : "나의 여행계획"}
         </h2>
 
         <div className="timeline-trip-title-row">
@@ -281,7 +283,7 @@ function Timeline({
         <div className="timeline-summary">
           <div className="timeline-summary-left">
             총 <b>{selectedPlaces.length}</b>개 여행지
-            <br />총 이동 거리:{' '}
+            <br />총 이동 거리:{" "}
             <b>{totalDistance ? totalDistance.toFixed(2) : 0} km</b>
           </div>
 
@@ -291,7 +293,7 @@ function Timeline({
             onClick={() => {
               if (
                 onClearAll &&
-                window.confirm('정말 전체 경로를 모두 삭제할까요?')
+                window.confirm("정말 전체 경로를 모두 삭제할까요?")
               ) {
                 onClearAll();
               }
@@ -318,8 +320,8 @@ function Timeline({
 
           const draft = drafts[routeId] || {
             photos: [],
-            title: '',
-            text: '',
+            title: "",
+            text: "",
           };
           const photos = (draft.photos || []).slice(0, 5);
           const firstPhoto = photos[0] || null;
@@ -352,8 +354,8 @@ function Timeline({
               <div
                 className={
                   draggingIndex === idx
-                    ? 'timeline-item timeline-item--dragging'
-                    : 'timeline-item'
+                    ? "timeline-item timeline-item--dragging"
+                    : "timeline-item"
                 }
                 draggable
                 onDragStart={() => onDragStart(idx)}
@@ -411,13 +413,13 @@ function Timeline({
                         type="file"
                         accept="image/*"
                         multiple
-                        style={{ display: 'none' }}
+                        style={{ display: "none" }}
                         onChange={(e) =>
                           handleFilesChange(routeId, e.target.files)
                         }
                       />
                     </label>
-                    <div style={{ fontSize: 12, color: '#6b7280' }}>
+                    <div style={{ fontSize: 12, color: "#6b7280" }}>
                       최대 5장까지 추가할 수 있어요.
                     </div>
                   </div>
@@ -485,7 +487,7 @@ function Timeline({
                       placeholder="이 장소에 대한 제목을 입력하세요"
                       value={draft.title}
                       onChange={(e) =>
-                        handleDraftChange(routeId, 'title', e.target.value)
+                        handleDraftChange(routeId, "title", e.target.value)
                       }
                     />
                   </div>
@@ -497,7 +499,7 @@ function Timeline({
                       placeholder="이 장소에 대한 소개나 여행 계획을 작성해보세요."
                       value={draft.text}
                       onChange={(e) =>
-                        handleDraftChange(routeId, 'text', e.target.value)
+                        handleDraftChange(routeId, "text", e.target.value)
                       }
                     />
                   </div>
@@ -523,7 +525,7 @@ function Timeline({
           className="timeline-footer-btn timeline-footer-btn--primary"
           onClick={handleSubmitAll}
         >
-          {mode === 'edit' ? '글 수정하기' : '글 작성하기'}
+          {mode === "edit" ? "글 수정하기" : "글 작성하기"}
         </button>
       </div>
     </div>

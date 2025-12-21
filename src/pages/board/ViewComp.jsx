@@ -1,22 +1,21 @@
 // src/pages/board/ViewComp.jsx
-import { useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import '../../styles/ViewComp.css';
-import { useKakaoMap } from '../../hooks/useKakaoMap';
-import apiClient from '../../services/apiClient';
-import LikeButtonComp from '../../common/LikeButtonComp';
-import { useBoardLike } from './view/useBoardLike';
+import { useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import "../../styles/ViewComp.css";
+import { useKakaoMap } from "../../hooks/useKakaoMap";
+import apiClient from "../../services/apiClient";
+import LikeButtonComp from "../../common/LikeButtonComp";
+import BookmarkButtonComp from "../../common/BookmarkButtonComp";
 
-import { MARKER_COLORS } from './view/viewMappers';
-import { useBoardDetail } from './view/useBoardDetail';
-import { useBoardComments } from './view/useBoardComments';
-import { useKakaoBoardMap } from './view/useKakaoBoardMap';
-import ViewComments from './view/ViewComments';
+import { MARKER_COLORS } from "./view/viewMappers";
+import { useBoardDetail } from "./view/useBoardDetail";
+import { useBoardComments } from "./view/useBoardComments";
+import { useKakaoBoardMap } from "./view/useKakaoBoardMap";
+import ViewComments from "./view/ViewComments";
 
 export default function ViewComp() {
   const navigate = useNavigate();
   const { id } = useParams(); // /board/:id
-  const { isLiked, setIsLiked, fetchLikeStatus } = useBoardLike(id);
 
   // ✅ 1) 게시글 상세 로드 (훅)
   const { loading, board, rawBoard, fetchBoardData } = useBoardDetail(id);
@@ -34,15 +33,22 @@ export default function ViewComp() {
     fetchComments,
     createComment,
   } = useBoardComments(board?.id);
+
   // ✅ 3) 썸네일 선택
   const [selectedIndex, setSelectedIndex] = useState(0);
 
+  // ✅ 4) 좋아요/북마크 초기값은 "서버에서 받은 board" 기준으로 계산
+  const initialIsLiked = Boolean(board?.isLiked ?? board?.liked ?? false);
+  const initialIsBookmarked = Boolean(
+    board?.isBookmarked ?? board?.bookmarked ?? false
+  );
+
   // Kakao map
-  const mapRef = useKakaoMap('map');
+  const mapRef = useKakaoMap("map");
   const markersRef = useRef([]);
   const polylineRef = useRef(null);
 
-  // ✅ 4) 지도 렌더링 (훅)
+  // ✅ 5) 지도 렌더링 (훅)
   useKakaoBoardMap({
     mapRef,
     places: board?.places,
@@ -52,21 +58,21 @@ export default function ViewComp() {
   });
 
   async function handleDelete() {
-    const ok = window.confirm('정말 삭제하시겠습니까?');
+    const ok = window.confirm("정말 삭제하시겠습니까?");
     if (!ok) return;
 
     try {
       await apiClient.delete(`/board/${board.id}`);
-      alert('삭제되었습니다.');
-      navigate('/board');
+      alert("삭제되었습니다.");
+      navigate("/board");
     } catch (err) {
-      console.error('삭제 실패:', err);
-      alert('삭제에 실패했습니다.');
+      console.error("삭제 실패:", err);
+      alert("삭제에 실패했습니다.");
     }
   }
 
   async function handleCreateComment() {
-    await createComment(); // ✅ commentText는 훅에서 이미 들고 있음
+    await createComment();
   }
 
   if (loading) return <div className="view-root">로딩 중...</div>;
@@ -74,7 +80,17 @@ export default function ViewComp() {
     return <div className="view-root">데이터를 불러올 수 없습니다.</div>;
 
   const selectedPlace = board.places[selectedIndex] ||
-    board.places[0] || { name: '', content: '', photos: [] };
+    board.places[0] || { name: "", content: "", photos: [] };
+
+  // ✅ 디버그: 서버에서 좋아요/북마크 필드가 진짜 내려오는지 확인
+  console.log("board detail(rawBoard):", rawBoard);
+  console.log("mapped board:", board);
+  console.log(
+    "initialIsLiked:",
+    initialIsLiked,
+    "initialIsBookmarked:",
+    initialIsBookmarked
+  );
 
   return (
     <div className="view-root">
@@ -90,7 +106,7 @@ export default function ViewComp() {
           <button
             className="view-back-link"
             type="button"
-            onClick={() => navigate('/board')}
+            onClick={() => navigate("/board")}
           >
             전체 여행기 목록보기
           </button>
@@ -98,7 +114,7 @@ export default function ViewComp() {
           <h1 className="view-title">{board.title}</h1>
 
           <div className="view-submeta">
-            작성 {board.createdAtStr} · 수정 {board.updatedAtStr} · 조회{' '}
+            작성 {board.createdAtStr} · 수정 {board.updatedAtStr} · 조회{" "}
             {board.viewCount}
           </div>
 
@@ -138,7 +154,7 @@ export default function ViewComp() {
               </div>
 
               <div className="view-writer-meta">
-                {board.writer.badgeName || '여행자'}
+                {board.writer.badgeName || "여행자"}
               </div>
             </div>
           </div>
@@ -147,17 +163,17 @@ export default function ViewComp() {
           <div className="view-actions-row">
             <LikeButtonComp
               boardId={board.id}
-              initialIsLiked={isLiked}
-              onLikeChange={(next) => {
-                setIsLiked(next);
-                fetchLikeStatus(); // ✅ 서버 기준으로 다시 맞춤
-              }}
+              initialIsLiked={initialIsLiked}
+              // ✅ "상태조회" 같은 별도 호출 금지. refetch로만 서버 기준 동기화.
+              onLikeChange={() => fetchBoardData({ silent: true })}
               refetchBoardData={() => fetchBoardData({ silent: true })}
             />
 
-            <button type="button" className="view-bookmark-btn">
-              북마크
-            </button>
+            <BookmarkButtonComp
+              boardId={board.id}
+              initialIsBookmarked={initialIsBookmarked}
+              refetchBoardData={() => fetchBoardData({ silent: true })}
+            />
           </div>
         </section>
 
@@ -189,8 +205,8 @@ export default function ViewComp() {
                   }
                 }}
                 className={
-                  'view-thumb-item' +
-                  (idx === selectedIndex ? ' view-thumb-item--active' : '')
+                  "view-thumb-item" +
+                  (idx === selectedIndex ? " view-thumb-item--active" : "")
                 }
               >
                 {place.thumbnailUrl ? (

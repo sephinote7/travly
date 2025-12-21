@@ -1,9 +1,9 @@
 // src/pages/board/ListComp.jsx
-import { useEffect, useMemo, useState } from 'react';
-import PostListItem from './components/PostListItem';
-import Pagination from './components/common/Pagination';
-import apiClient from '../../services/apiClient';
-import '../../styles/PostListPage.css';
+import { useEffect, useMemo, useState } from "react";
+import PostListItem from "./components/PostListItem";
+import Pagination from "./components/common/Pagination";
+import apiClient from "../../services/apiClient";
+import "../../styles/PostListPage.css";
 
 const PAGE_SIZE = 10; // 1페이지 10개
 
@@ -12,8 +12,8 @@ function ListComp() {
 
   // UI 상태
   const [showFilters, setShowFilters] = useState(false);
-  const [q, setQ] = useState('');
-  const [tab, setTab] = useState('all'); // all=최신순, hot=인기순
+  const [q, setQ] = useState("");
+  const [tab, setTab] = useState("all"); // all=최신순, hot=인기순
 
   // 필터 상태
   const [filters, setFilters] = useState([]);
@@ -26,15 +26,15 @@ function ListComp() {
   const [error, setError] = useState(null);
 
   // ✅ 정렬 파라미터
-  const orderby = useMemo(() => (tab === 'hot' ? 'like' : 'updatedAt'), [tab]);
+  const orderby = useMemo(() => (tab === "hot" ? "like" : "updatedAt"), [tab]);
 
   // ✅ URL 쿼리로 탭 초기 세팅 (?orderby=like 또는 ?orderby=updated)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const orderbyValue = params.get('orderby');
+    const orderbyValue = params.get("orderby");
 
-    if (orderbyValue === 'like') setTab('hot');
-    else if (orderbyValue === 'updated') setTab('all');
+    if (orderbyValue === "like") setTab("hot");
+    else if (orderbyValue === "updated") setTab("all");
 
     setPage(1);
   }, []);
@@ -49,9 +49,9 @@ function ListComp() {
 
     return posts.filter(
       (p) =>
-        (p.title || '').toLowerCase().includes(keyword) ||
-        (p.placeTitle || '').toLowerCase().includes(keyword) ||
-        (p.memberNickname || '').toLowerCase().includes(keyword)
+        (p.title || "").toLowerCase().includes(keyword) ||
+        (p.placeTitle || "").toLowerCase().includes(keyword) ||
+        (p.memberNickname || "").toLowerCase().includes(keyword)
     );
   }, [posts, q]);
 
@@ -59,7 +59,7 @@ function ListComp() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await apiClient.get('/filter');
+        const res = await apiClient.get("/filter");
         const allItems = (res.data || []).flatMap((f) => f.items || []);
         setFilters(allItems);
       } catch (e) {
@@ -101,7 +101,7 @@ function ListComp() {
     try {
       const res = hasFilter
         ? await apiClient.post(
-            '/board/search',
+            "/board/search",
             { itemIds: selectedFilterIds },
             {
               params: {
@@ -110,7 +110,7 @@ function ListComp() {
               },
             }
           )
-        : await apiClient.get('/board', {
+        : await apiClient.get("/board", {
             params: {
               size: PAGE_SIZE,
               page: page - 1,
@@ -125,12 +125,12 @@ function ListComp() {
         ? data.totalPages
         : Number.isFinite(data.totalElements)
         ? Math.ceil(data.totalElements / PAGE_SIZE)
-        : 1;
+        : 10;
 
       setTotalPages(tp);
     } catch (e) {
       console.error(e);
-      setError('게시글을 불러오는 중 오류가 발생했습니다.');
+      setError("게시글을 불러오는 중 오류가 발생했습니다.");
     } finally {
       setLoading(false);
     }
@@ -168,7 +168,7 @@ function ListComp() {
                     key={item.id}
                     type="button"
                     className={`pl-chip ${
-                      selectedFilterIds.includes(item.id) ? 'is-active' : ''
+                      selectedFilterIds.includes(item.id) ? "is-active" : ""
                     }`}
                     onClick={() => toggleFilter(item.id)}
                   >
@@ -193,9 +193,9 @@ function ListComp() {
           <div className="pl-tabRow">
             <button
               type="button"
-              className={`pl-tab ${tab === 'all' ? 'is-active' : ''}`}
+              className={`pl-tab ${tab === "all" ? "is-active" : ""}`}
               onClick={() => {
-                setTab('all');
+                setTab("all");
                 setPage(1);
               }}
             >
@@ -204,9 +204,9 @@ function ListComp() {
 
             <button
               type="button"
-              className={`pl-tab ${tab === 'hot' ? 'is-active' : ''}`}
+              className={`pl-tab ${tab === "hot" ? "is-active" : ""}`}
               onClick={() => {
-                setTab('hot');
+                setTab("hot");
                 setPage(1);
               }}
             >
