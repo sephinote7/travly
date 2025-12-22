@@ -86,13 +86,25 @@ function SideProfileComp() {
             <li className="p">나의 여행 공간</li>
           </Link>
 
-          <Link>
-            <li className="p">내가 남긴 여행 기록</li>
-          </Link>
+          <li
+            className="p cursor-pointer"
+            onClick={() => {
+              closeUserComp();
+              navigate('/board/list?type=my');
+            }}
+          >
+            내가 남긴 여행 기록
+          </li>
 
-          <Link>
-            <li className="p">내가 저장한 여행</li>
-          </Link>
+          <li
+            className="p cursor-pointer"
+            onClick={() => {
+              closeUserComp();
+              navigate('/board/list?type=bookmark');
+            }}
+          >
+            내가 저장한 여행
+          </li>
           <li className=" text-red-600 cursor-pointer" onClick={handleLogout}>
             로그아웃
           </li>
