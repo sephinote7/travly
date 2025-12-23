@@ -84,12 +84,18 @@
 - 최근 게시물 9종 게시
 - Travly에 대한 소개 및 QNA 로 이동 기능
 
+  ### [Index 시연 영상](https://www.youtube.com/watch?v=YbsanxSRPSU)
+
 > ### _HEADER_
 
 - 로그인 / 회원가입 창을 들어갈 수 있는 모달 창 제공
 - 로그인 처리 되었을 시 사이드 프로필로 사용자의 간단한 정보 및 상세 페이지 이동
 - 작성 페이지 / 검색 + 전체 게시글 페이지로 이동 할 수 있도록 설계
 - 로그인 시 자신의 게시물에 댓글이 달렸을 경우 알림 처리 창 제공
+
+  ### [회원가입 시연 영상](https://www.youtube.com/watch?v=niXd3MW1eIM)
+  
+  ### [로그인 시연 영상](https://www.youtube.com/watch?v=hMeLV2vwngc)
 
 > ### _BOARD_
 
@@ -100,23 +106,33 @@
   - 외부 API(카카오맵/한국관광공사)를 사용해서 다양한 검색 결과 제공 및 맵에 마커 표시
   - 멀티미디어(사진/최대 5개 복수첨부 가능) 첨부 기능
   - 각 장소에 대한 순서 변경 및 그에 따른 썸네일 변화
+ 
+    ### [작성 페이지 시연 영상](https://www.youtube.com/watch?v=N0rn5A2cNZ4)
 
 - List
 
   - 전체 게시글 인기순/최신순으로 정렬 기능
   - 원하는 게시물 탐색 기능(검색어/태그)
+ 
+    ### [검색 / 리스트 시연 영상](https://www.youtube.com/watch?v=nfVPPaNcbLM)
 
 - View
 
   - 원하는 특정 게시물 상세 보기 제공
   - 좋아요 / 북마크 / 댓글 기능
   - 각 장소 썸네일을 눌러 다른 항목들 확인 가능 / 지도에 표기
+ 
+    ### [상세 페이지 시연 영상](https://www.youtube.com/watch?v=1-BZ_7HRUw8)
 
 - Modify / Delete
   - 자신의 게시글에서 수정 / 삭제 기능 제공
   - 수정 시 카테고리 선택부터 시작 나머지는 작성 기능과 동일
+ 
+    ### [수정 페이지 시연 영상](https://www.youtube.com/watch?v=pMHCWEKLQVE)
 
 > ### _USER_
 
 - 회원 정보 수정 기능 제공(사진 / 소개말 / 닉네임)
 - 자신이 북마크한 글 / 자신이 작성한 글 리스트 제공
+
+   ### [회원 정보 수정 시연 영상](https://www.youtube.com/watch?v=OIOAcVgoswQ)
