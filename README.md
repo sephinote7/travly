@@ -16,7 +16,7 @@
 ---
 
 > ### *Persona*
-> ## - 
+![페르소나](https://github.com/sephinote7/travly/blob/main/src/common/images/Persona.jpg)
 
 
 # 팀원 역할
