@@ -51,15 +51,7 @@ Supabase (초기 Auth 테스트)
 
 ---
 
-## 3. 주요 화면
-
-| 홈                                                                          | 검색                                                                     | 마이페이지                                                               |
-| --------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
-| ![Home](https://via.placeholder.com/300x200/4F46E5/FFFFFF?text=TRAVLY+Home) | ![Search](https://via.placeholder.com/300x200/10B981/FFFFFF?text=Search) | ![MyPage](https://via.placeholder.com/300x200/F59E0B/FFFFFF?text=MyPage) |
-
----
-
-## 4. 시스템 아키텍처
+## 3. 시스템 아키텍처
 
 [Client: React] ← Axios → [Server: Spring Boot] ← JPA → [MySQL]
 ↓ 인증
@@ -73,7 +65,7 @@ post (id, member_id, title, content, place_id)
 
 ---
 
-## 5. 실행 방법
+## 4. 실행 방법
 
 ### Frontend
 
@@ -102,7 +94,7 @@ secret: your-256bit-secret-key-here
 
 ---
 
-## 6. API 명세
+## 5. API 명세
 
 | Method | Endpoint           | 설명                    |
 | ------ | ------------------ | ----------------------- |
@@ -129,7 +121,7 @@ secret: your-256bit-secret-key-here
 
 ---
 
-## 7. 폴더 구조
+## 6. 폴더 구조
 
 travly-frontend/
 ├── src/
@@ -147,7 +139,7 @@ travly-backend/
 
 ---
 
-## 8. 개발 히스토리
+## 7. 개발 히스토리
 
 ### ✅ 완료
 
@@ -174,14 +166,6 @@ travly-backend/
 브랜치: feat/기능명, fix/버그명
 커밋: feat: 로그인 UI 개선
 PR: 1명 이상 리뷰 → 머지
-
----
-
-## 10. 배포 링크
-
-- **Frontend**: https://travly-frontend.vercel.app
-- **Backend**: https://travly-backend.onrender.com
-- **Swagger**: https://travly-backend.onrender.com/swagger-ui.html
 
 ---
 
