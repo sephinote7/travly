@@ -43,6 +43,17 @@
 - Login/SignUp 기능 구현
 - UserProfile 및 UserData 가져오기 및 수정 기능 구현
 
+#### 📹 Member/Login 기능 데모 영상
+
+**로그인 기능**
+[![로그인 데모](https://img.youtube.com/vi/hMeLV2vwngc/0.jpg)](https://youtu.be/hMeLV2vwngc?si=tv1oxyGlkyL_mB9R)
+
+**회원가입 기능**
+[![회원가입 데모](https://img.youtube.com/vi/niXd3MW1eIM/0.jpg)](https://youtu.be/niXd3MW1eIM?si=WtzPeM6yhBVhqvoU)
+
+**프로필 수정 기능**
+[![프로필수정 데모](https://img.youtube.com/vi/OIOAcVgoswQ/0.jpg)](https://youtu.be/OIOAcVgoswQ?si=R-PEzjMJsaql576R)
+
 > ### 김명환
 
 - 외부 API(카카오 맵/ 한국관광공사)를 가져와 지도에 매핑 기능 구현
